@@ -113,7 +113,7 @@ describe('plan validation', () => {
     budget: { maxAgents: 8, models: ['claude/claude-sonnet-5-5'] },
     lots: [
       { id: 'L1', title: 'Webhook', service: 'Développement', model: 'claude/claude-sonnet-5-5' },
-      { id: 'L2', title: 'Relecture', service: 'Qualité', model: 'claude/claude-opus-4-8' },
+      { id: 'L2', title: 'Relecture', service: 'Qualité', model: 'claude/claude-opus-5-5' },
     ],
   });
 

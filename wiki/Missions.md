@@ -55,7 +55,7 @@ Le chef écrit un fichier `plan.json` et le dépose avec `boite bureau-plan plan
   "budget": { "maxAgents": 8, "models": ["claude/claude-sonnet-5-5", "claude/claude-haiku-5-5"] },
   "lots": [
     { "id": "L1", "title": "Webhook de paiement et ses tests", "service": "Développement", "model": "claude/claude-sonnet-5-5" },
-    { "id": "L2", "title": "Relecture sécurité", "service": "Qualité", "model": "claude/claude-opus-4-8" }
+    { "id": "L2", "title": "Relecture sécurité", "service": "Qualité", "model": "claude/claude-opus-5-5" }
   ]
 }
 ```

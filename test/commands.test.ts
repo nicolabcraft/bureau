@@ -50,7 +50,7 @@ const validPlan = {
   budget: { maxAgents: 4, models: ['claude/claude-sonnet-5-5'] },
   lots: [
     { id: 'L1', title: 'Webhook', service: 'Développement', model: 'claude/claude-sonnet-5-5' },
-    { id: 'L2', title: 'Relecture', service: 'Qualité', model: 'claude/claude-opus-4-8' },
+    { id: 'L2', title: 'Relecture', service: 'Qualité', model: 'claude/claude-opus-5-5' },
   ],
 };
 const writePlan = (dir: string, plan: unknown = validPlan, name = 'plan.json') => {
@@ -383,7 +383,7 @@ describe('bureau-mission', () => {
       "    agent Développement (deviné) | Agent webhook | attend l'utilisateur (permission) | modèle : claude-haiku-5-5 | id : agent",
       'Lots :',
       'L1 | todo | Développement | Webhook | claude/claude-sonnet-5-5 | agent : aucun',
-      'L2 | todo | Qualité | Relecture | claude/claude-opus-4-8 | agent : aucun',
+      'L2 | todo | Qualité | Relecture | claude/claude-opus-5-5 | agent : aucun',
       'Rapports :',
       'agent | Agent webhook : Webhook livré.',
     ]);
@@ -416,7 +416,7 @@ describe('bureau-mission', () => {
       '    agent Développement (deviné) | Agent tests | terminé | modèle : claude-haiku-5-5 | id : ag2',
       'Lots :',
       'L1 | todo | Développement | Webhook | claude/claude-sonnet-5-5 | agent : aucun',
-      'L2 | todo | Qualité | Relecture | claude/claude-opus-4-8 | agent : aucun',
+      'L2 | todo | Qualité | Relecture | claude/claude-opus-5-5 | agent : aucun',
       'Rapports : aucun',
     ]);
     // Same team, same lines; only the caller line changes.
