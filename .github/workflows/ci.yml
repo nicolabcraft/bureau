@@ -33,6 +33,22 @@ jobs:
         run: bun test
       - name: Manifeste
         run: bun run check:manifest
+      - name: Paquet (bureau.js) et manifeste à jour
+        # bun run pack réécrit boite-plugin.json : il doit rester identique au fichier commité.
+        run: |
+          bun run pack
+          if ! git diff --exit-code -- boite-plugin.json; then
+            echo "::error::boite-plugin.json n'est pas celui que bun run pack produit. Lancer bun run pack et commiter le manifeste."
+            exit 1
+          fi
+      - name: Garder bureau.js de ce commit
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: bureau-js
+          path: |
+            bureau.js
+            boite-plugin.json
+          retention-days: 14
       - name: Wiki et README (liens, tirets, chemins personnels)
         run: bun scripts/check-wiki.ts
       - name: Pas de tiret cadratin ni demi-cadratin
