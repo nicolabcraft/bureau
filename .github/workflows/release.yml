@@ -46,6 +46,12 @@ jobs:
             exit 1
           fi
           sha256sum bureau.js
+      - name: Notes de version (journal et tuto d'installation complet) et sommes
+        run: |
+          sha="$(sha256sum bureau.js | cut -d' ' -f1)"
+          bun scripts/release-notes.ts "$GITHUB_REF_NAME" "$sha" > "$RUNNER_TEMP/notes.md"
+          sha256sum bureau.js boite-plugin.json > SHA256SUMS
+          cat SHA256SUMS
       - name: Créer la release GitHub
         env:
           GH_TOKEN: ${{ github.token }}
@@ -53,4 +59,16 @@ jobs:
         run: |
           flags=()
           case "$TAG" in *-*) flags+=(--prerelease) ;; esac
-          gh release create "$TAG" bureau.js --verify-tag --title "Bureau $TAG" --generate-notes "${flags[@]}"
+          gh release create "$TAG" bureau.js boite-plugin.json SHA256SUMS --verify-tag --title "Bureau $TAG" --notes-file "$RUNNER_TEMP/notes.md" "${flags[@]}"
+      - name: Contrôler le fichier publié
+        # Boite télécharge l'adresse du manifeste et compare la somme : on fait pareil.
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          url="$(bun -e 'console.log(require("./boite-plugin.json").artifacts.any.url)')"
+          want="$(bun -e 'console.log(require("./boite-plugin.json").artifacts.any.sha256)')"
+          curl -fsSL --retry 5 --retry-delay 3 -o "$RUNNER_TEMP/bureau.js" "$url"
+          got="$(sha256sum "$RUNNER_TEMP/bureau.js" | cut -d' ' -f1)"
+          if [ "$got" != "$want" ]; then echo "::error::$url a la somme $got, le manifeste attend $want."; exit 1; fi
+          echo "Fichier publié conforme au manifeste : $got"

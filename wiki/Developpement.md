@@ -140,7 +140,7 @@ Arbre de l'équipe : le fil au-dessus de chaque fil est son `parentThreadId`, sa
 bun test
 ```
 
-235 tests dans 9 fichiers, sans accès à un vrai Boite :
+248 tests dans 10 fichiers, sans accès à un vrai Boite :
 
 | Fichier | Couvre |
 |---|---|
@@ -153,6 +153,7 @@ bun test
 | `test/archive.test.ts` | règles d'archivage, réglages, journal |
 | `test/manifest.test.ts` | validité de `boite-plugin.json` |
 | `test/github.test.ts` | fichiers du dépôt GitHub (CI, modèles) |
+| `test/release-notes.test.ts` | notes d'une version : section du journal et tuto d'installation |
 
 `test/helpers.ts` fournit un faux core de Boite (`fakeCore`), des fils de test et des dossiers temporaires.
 
@@ -170,9 +171,27 @@ Avec `BUREAU_DEMO=gros bun run demo`, ouvrir la page avec `?demo=1`, injecter `s
 
 ## Livrer
 
-1. `bun run check` et `bun test` passent.
-2. `bun run pack` produit `bureau.js` (non versionné) et écrit les skills et la somme SHA-256 dans `boite-plugin.json`.
-3. Publier `bureau.js` tel quel à l'adresse que donne `artifacts.any.url` du manifeste (une release du dépôt).
+`main` est protégée : on y arrive par une pull request dont le titre suit `type: résumé` et dont la CI passe ; ni force-push ni suppression.
+
+### Intégration continue
+
+| Workflow | Quand | Fait |
+|---|---|---|
+| `ci` | push sur `main`, chaque PR | types, tests, manifeste, `bun run pack` (le manifeste commité doit être celui que pack produit), wiki et README, tirets ; garde `bureau.js` du commit comme artefact 14 jours |
+| `codeql` | push sur `main`, chaque PR, chaque lundi | analyse de sécurité du code JavaScript et TypeScript |
+| `titre de la PR` | chaque PR | format `type: résumé` |
+| `wiki` | push sur `main` qui touche `wiki/` | publie `wiki/` dans le wiki GitHub |
+| `release` | tag `v*` | refait la CI, construit `bureau.js`, crée la version GitHub et contrôle le fichier publié |
+
+### Publier une version
+
+1. Sur une branche : monter `version` dans `package.json` et `boite-plugin.json`, et l'adresse `artifacts.any.url` du manifeste (`.../releases/download/vX.Y.Z/bureau.js`).
+2. Ajouter la section `## X.Y.Z` en tête de `CHANGELOG.md`.
+3. `bun run pack`, puis `bun run check`, `bun test` ; commiter `boite-plugin.json` (somme SHA-256 à jour).
+4. Pull request, CI verte, fusion dans `main`.
+5. Sur `main` à jour : `git tag vX.Y.Z` puis `git push origin vX.Y.Z`.
+
+Le workflow `release` vérifie que le tag, `package.json` et le manifeste concordent, reconstruit `bureau.js` (même commit, même somme), puis crée la version avec `bureau.js`, `boite-plugin.json` et `SHA256SUMS`. Ses notes sont la section du journal suivie du tuto d'installation complet (`.github/release/installation.md`, assemblé par `scripts/release-notes.ts`). Enfin il télécharge `bureau.js` à l'adresse du manifeste et compare la somme, comme Boite le fera.
 
 ## Contribuer
 
