@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bureau</title>
+<style>
+:root{
+  --moquette:#2B3445; --mur:#3E4A5F; --bois:#9A6B4B; --ecran:#8FD9C4; --lampe:#F0C36A; --texte:#E8ECF2;
+  --erreur:#E0645A; --fond:#1A212E; --panneau:#222B3A; --panneau2:#2A3547; --ligne:#37435A; --ligne2:#4A5875;
+  --doux:#AAB5C8; --bouton:#2E394D;
+  font-family:"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,sans-serif;
+}
+*{box-sizing:border-box}
+[hidden]{display:none !important}
+html,body{height:100%;margin:0}
+body{background:var(--fond);color:var(--texte);font-size:14px;line-height:1.4;display:flex;flex-direction:column;overflow:hidden}
+button,input{font:inherit;color:inherit}
+button{touch-action:manipulation}
+svg{display:block;flex:none}
+.ico{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+:focus-visible{outline:2px solid var(--texte);outline-offset:2px}
+
+/* header */
+.barre{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;padding:10px 14px;background:var(--panneau);border-bottom:1px solid var(--ligne);position:relative;z-index:6}
+.titre{flex:1 1 240px;min-width:0}
+.titre h1{margin:0;font-size:15px;font-weight:600;line-height:1.25}
+.titre p{margin:0;color:var(--doux);font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-height:1.4em}
+.horloge{display:flex;align-items:baseline;gap:8px;padding:2px 10px;border-left:1px solid var(--ligne2)}
+.horloge b{font-size:20px;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:.02em;line-height:1.1}
+.horloge b i{font-style:normal;transition:opacity .2s}
+.horloge b i.off{opacity:.25}
+.horloge span{color:var(--doux);font-size:12.5px;min-width:52px}
+.actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:34px;padding:6px 12px;border:1px solid var(--ligne2);border-radius:6px;background:var(--bouton);cursor:pointer;font-size:13.5px;font-weight:500;white-space:nowrap}
+.btn:hover{background:#38455C}
+.btn.plein{background:var(--lampe);border-color:var(--lampe);color:#2A2008}
+.btn.plein:hover{background:#F5CF85}
+.btn[aria-pressed=true].jaune{background:var(--lampe);border-color:var(--lampe);color:#2A2008}
+.btn[aria-pressed=true].jaune .pastille{background:#2A2008;color:var(--lampe)}
+.btn[aria-pressed=true]:not(.jaune){background:var(--ecran);border-color:var(--ecran);color:#0F2923}
+.btn.danger{color:#F4A39B;border-color:#6A4143;background:transparent}
+.btn.danger:hover{background:#3A2A32}
+.btn[disabled]{opacity:.5;cursor:default}
+.btn.petit{min-height:30px;padding:4px 10px;font-size:13px}
+.btn.icone{min-height:30px;width:30px;padding:0;background:transparent;border-color:transparent}
+.btn.icone:hover{background:var(--panneau2)}
+.pastille{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 6px;border-radius:10px;background:var(--lampe);color:#2A2008;font-size:12px;font-weight:700;font-variant-numeric:tabular-nums}
+.compteur{display:flex;gap:14px;font-size:13px;color:var(--doux);flex-wrap:wrap;flex:1 1 100%;min-height:19px}
+.compteur span{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.compteur i{width:8px;height:8px;display:block}
+.compteur b{color:var(--texte);font-weight:600;font-variant-numeric:tabular-nums}
+.bandeau{padding:6px 14px;font-size:12.5px;background:var(--panneau2);color:var(--doux);border-bottom:1px solid var(--ligne);text-align:center}
+.bandeau.alerte{background:#3A2A32;color:#F4A39B;border-bottom-color:#6A4143}
+
+/* body: scene, then the card (a column on a wide window, a sheet under the scene on a narrow one) */
+.corps{flex:1;min-height:0;display:flex}
+main{flex:1;min-width:0;position:relative;background:#0b1020;overflow:hidden;container:scene / inline-size}
+#cv{position:absolute;inset:0;width:100%;height:100%;display:block;transition:opacity .6s ease;touch-action:none;cursor:grab}
+#cv.fondu{opacity:0}
+#cv.prise{cursor:grabbing}
+.vide-scene{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:5;width:min(380px,calc(100% - 32px));padding:20px 22px;border:1px solid var(--ligne2);border-radius:10px;background:rgba(34,43,58,.94);text-align:center;pointer-events:none}
+.vide-scene h2{margin:0 0 8px;font-size:16px;font-weight:600}
+.vide-scene p{margin:0;color:var(--doux)}
+.vide-scene code{padding:1px 6px;border-radius:4px;background:var(--panneau2);color:var(--texte);font-size:13px}
+.toast{position:absolute;left:50%;top:12px;transform:translateX(-50%);z-index:12;max-width:min(92%,460px);padding:8px 14px;border-radius:6px;background:var(--texte);color:#1A212E;font-size:13.5px;font-weight:500;text-align:center;pointer-events:none;transition:opacity .25s,transform .25s}
+.toast[data-v=false]{opacity:0;transform:translate(-50%,-8px)}
+.toast.err{background:#F4A39B;color:#2A0F0D}
+.bulle{position:absolute;z-index:11;pointer-events:none;max-width:260px;padding:6px 10px;border-radius:6px;background:rgba(20,26,38,.94);border:1px solid var(--ligne2);font-size:12.5px;line-height:1.35;transform:translate(-50%,-100%)}
+.bulle b{display:block;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bulle span{display:block;color:var(--doux);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bulle .et{display:flex;align-items:center;gap:6px;color:var(--texte)}
+.bulle .et i{width:8px;height:8px;flex:none;display:block}
+.bulle .lot{color:var(--lampe)}
+.cache{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* Immeuble panel */
+.etages{position:absolute;left:10px;top:10px;z-index:8;width:216px;max-height:calc(100% - 20px);overflow:auto;display:flex;flex-direction:column;gap:4px;padding:6px;border-radius:8px;background:rgba(34,43,58,.92);border:1px solid var(--ligne);scrollbar-width:thin;scrollbar-color:#4A5875 transparent}
+.etages h2{margin:2px 4px 2px;font-size:12.5px;font-weight:600;color:var(--doux)}
+.etages .vue{min-height:32px;margin-bottom:2px;flex:none}
+.etage{display:grid;grid-template-columns:22px minmax(0,1fr);gap:2px 8px;align-items:center;width:100%;flex:none;padding:6px 8px;border:1px solid transparent;border-radius:6px;background:transparent;text-align:left;cursor:pointer}
+.etage:hover{background:var(--panneau2)}
+.etage[aria-current=true]{background:var(--panneau2);border-color:var(--ligne2)}
+.etage .no{grid-row:span 3;align-self:start;display:flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:4px;background:var(--bouton);font-size:12px;font-weight:600;font-variant-numeric:tabular-nums}
+.etage b{font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.etage small{display:flex;align-items:center;gap:6px;color:var(--doux);font-size:12px;min-height:16px}
+.etage .jauge{flex:1;height:4px;border-radius:2px;background:#2b3547;overflow:hidden}
+.etage .jauge i{display:block;height:100%;background:var(--ecran);transition:width .4s}
+.etage .puces{display:flex;flex-wrap:wrap;gap:4px}
+.etage .puces span{padding:0 6px;border-radius:9px;font-size:11.5px;line-height:17px;white-space:nowrap}
+.etage .puces .att{background:rgba(240,195,106,.16);border:1px solid rgba(240,195,106,.55);color:var(--lampe);font-weight:600}
+.etage .puces .pav{border:1px solid var(--lampe);color:var(--lampe)}
+.etage .puces .fin{color:var(--doux)}
+.etage .puces:empty{display:none}
+.etage.neuf .no{background:var(--lampe);color:#2A2008}
+
+/* tools */
+.outils{position:absolute;right:10px;bottom:12px;z-index:8;display:flex;flex-direction:column;gap:6px;align-items:center}
+.outil{display:flex;align-items:center;justify-content:center;width:38px;height:38px;border:1px solid var(--ligne2);border-radius:8px;background:rgba(46,57,77,.92);cursor:pointer;padding:0}
+.outil:hover{background:#3d4b66}
+.outil svg{width:18px;height:18px}
+.boussole{width:38px;height:38px;border-radius:50%;background:rgba(34,43,58,.9);border:1px solid var(--ligne2);display:flex;align-items:center;justify-content:center;pointer-events:none}
+.boussole svg{width:26px;height:26px;transition:transform .15s linear}
+.zoomv{font-size:11.5px;color:var(--doux);font-variant-numeric:tabular-nums;background:rgba(34,43,58,.85);padding:1px 6px;border-radius:4px}
+.aide{position:absolute;left:236px;bottom:10px;z-index:7;max-width:calc(100% - 300px);padding:3px 9px;border-radius:5px;background:rgba(34,43,58,.78);color:var(--doux);font-size:12.5px;pointer-events:none}
+
+/* footer: the manual clock, only with ?demo=1 (noyau.js shows it) */
+.pied{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;padding:8px 14px;background:var(--panneau);border-top:1px solid var(--ligne);position:relative;z-index:6}
+.pied label{color:var(--doux);font-size:13px}
+.pied input[type=range]{width:min(320px,100%);accent-color:var(--lampe);flex:1 1 160px;max-width:360px}
+
+/* card */
+.fiche{flex:none;width:330px;overflow:auto;background:var(--panneau);border-left:1px solid var(--ligne);padding:14px 16px 18px;position:relative;z-index:8;animation:entree .18s ease-out}
+@keyframes entree{from{opacity:0;transform:translateX(12px)}to{opacity:1;transform:none}}
+.fiche h2{margin:0;font-size:16px;font-weight:600;line-height:1.25}
+.fiche h2:focus{outline:none}
+.fiche p{margin:0}
+.legende{list-style:none;margin:12px 0 0;padding:0;display:grid;gap:10px;font-size:13px}
+.legende li{display:grid;grid-template-columns:10px 1fr;gap:10px;align-items:start}
+.legende i{width:10px;height:10px;margin-top:4px;border-radius:2px}
+.legende.lieux{margin-top:16px;padding-top:12px;border-top:1px solid var(--ligne)}
+.tete{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;margin-bottom:12px}
+.tete canvas{width:72px;height:68px;background:var(--moquette);border-radius:4px;display:block}
+.tete .sous{color:var(--doux);font-size:13px}
+.tete > div{min-width:0}
+.tete h2{overflow-wrap:anywhere}
+dl{margin:0;display:grid;grid-template-columns:96px 1fr;gap:8px 12px;font-size:13.5px}
+dt{color:var(--doux)}
+dd{margin:0;min-width:0;overflow-wrap:anywhere}
+dd ul{margin:0;padding:0;list-style:none;display:grid;gap:2px}
+dd small{display:block;color:var(--doux);font-size:12.5px}
+.etat-ligne{display:inline-flex;align-items:center;gap:8px}
+.etat-ligne i{width:10px;height:10px;display:block}
+.rapport{max-height:150px;overflow:auto;margin:0;padding:8px 10px;border-left:3px solid var(--ligne2);background:var(--panneau2);white-space:pre-wrap;font-size:13px;line-height:1.45}
+.question{margin:0 0 12px;padding:8px 10px;border-left:3px solid var(--lampe);background:var(--panneau2);font-size:13.5px}
+.question small{display:block;color:var(--doux);font-size:12.5px;margin-bottom:2px}
+.question .reste{margin:6px 0 0}
+.boutons{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.entete-liste{display:flex;justify-content:space-between;align-items:center}
+.liste-attente{display:grid;gap:8px;margin-top:10px}
+.liste-attente > p{color:var(--doux)}
+.ligne-liste{display:grid;grid-template-columns:minmax(0,1fr);justify-items:start;white-space:normal;gap:2px;text-align:left;width:100%;padding:10px 12px;border:1px solid var(--ligne2);border-left:3px solid var(--lampe);border-radius:6px;background:var(--panneau2);cursor:pointer}
+.ligne-liste:hover{background:#314058}
+.ligne-liste small{color:var(--doux);font-size:12.5px}
+.plan .resume{margin:6px 0 4px;color:var(--doux);font-size:13px}
+.plan .budget{margin:0 0 10px;color:var(--doux);font-size:12.5px}
+.plan table{width:100%;border-collapse:collapse;font-size:13px}
+.plan th{text-align:left;font-weight:500;color:var(--doux);padding:4px 6px 6px 0;border-bottom:1px solid var(--ligne)}
+.plan td{padding:7px 6px 7px 0;border-bottom:1px solid var(--ligne);vertical-align:top}
+.plan td:last-child,.plan th:last-child{padding-right:0}
+.plan .a-valider td{color:var(--lampe)}
+.plan .sup{display:block;color:var(--doux);font-size:12px}
+.plan-pied{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:14px}
+.plan-pied p{color:var(--doux);font-size:12.5px;flex:1 1 180px}
+.plan-pied p.ok{color:var(--ecran);font-size:13.5px;font-weight:600}
+
+/* narrow window: the card is a sheet under the scene */
+@media (max-width:899px){
+  .corps{flex-direction:column}
+  .fiche{width:auto;max-height:46vh;max-height:46dvh;border-left:0;border-top:1px solid var(--ligne2);border-radius:12px 12px 0 0;padding:12px 14px 16px;animation-name:entree-bas}
+  dl{grid-template-columns:84px 1fr}
+}
+@keyframes entree-bas{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+
+/* narrow scene (the engine switches layout at 700 px of scene width): floors become a strip, tools shrink */
+@container scene (max-width:700px){
+  .etages{left:8px;right:8px;top:6px;width:auto;flex-direction:row;align-items:stretch;overflow-x:auto;overflow-y:hidden;max-height:none;padding:3px;gap:3px;scrollbar-width:none}
+  .etages h2{display:none}
+  .etage{width:158px;padding:2px 6px;gap:0 6px}
+  .etage small{min-height:15px;line-height:15px}
+  .etage .puces span{line-height:16px}
+  .etage .no{grid-row:span 3}
+  .etage .jauge{display:none}
+  .etage .puces{flex-wrap:nowrap}
+  .etage .puces .fin{display:none}
+  .etages .vue{width:auto;padding:4px 8px;min-height:0}
+  .outils{right:8px;bottom:8px;gap:4px}
+  .outil{width:34px;height:34px}
+  .outil svg{width:16px;height:16px}
+  .boussole{width:30px;height:30px}
+  .boussole svg{width:20px;height:20px}
+  .zoomv{display:none}
+  .aide{display:none}
+  .toast{top:auto;bottom:12px;max-width:calc(100% - 100px)}
+  .toast[data-v=false]{transform:translate(-50%,8px)}
+}
+@media (max-width:560px){
+  .barre{padding:8px 10px;gap:4px 12px}
+  .titre{flex:1 1 140px}
+  .horloge{border-left:0;padding:0}
+  .compteur{flex-wrap:nowrap;overflow-x:auto;gap:12px;scrollbar-width:none}
+  .btn{padding:6px 10px;font-size:13px}
+}
+@media (prefers-reduced-motion:reduce){
+  #cv,.toast,.boussole svg,.etage .jauge i,.horloge b i{transition:none}
+  .fiche{animation:none}
+}
+</style>
+</head>
+<body>
+
+<header class="barre">
+  <div class="titre">
+    <h1>Bureau</h1>
+    <p id="sous"></p>
+  </div>
+  <div class="horloge" role="group" aria-label="Heure du bureau">
+    <b id="hh">00<i id="dp">:</i>00</b><span id="phase">Nuit</span>
+  </div>
+  <div class="actions">
+    <button class="btn jaune" id="bAttente" type="button" aria-pressed="false">
+      <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 11V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2"/><path d="M14 10V4a2 2 0 0 0-2-2a2 2 0 0 0-2 2v2"/><path d="M10 10.5V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg>
+      Qui m’attend
+      <span class="pastille" id="nAttente" hidden></span>
+    </button>
+    <button class="btn" id="bPlan" type="button" aria-pressed="false" hidden>Plan de mission</button>
+  </div>
+  <div class="compteur" id="compteur" role="group" aria-label="Compteur des agents"></div>
+</header>
+<div class="bandeau" id="bandeau" role="status" hidden></div>
+
+<div class="corps" id="corps">
+  <main id="scene">
+    <canvas id="cv" role="img" aria-label="Vue isométrique de l'immeuble : un étage par projet, les agents à leurs bureaux, l'ascenseur, la cafétéria, le chantier d'un nouvel étage"></canvas>
+    <div class="vide-scene" id="videScene" hidden></div>
+    <div class="toast" id="toast" data-v="false"></div>
+    <div class="bulle" id="bulle" hidden></div>
+    <nav class="etages" id="etages" aria-label="Étages de l’immeuble"></nav>
+    <div class="aide">Molette : zoom. Clic droit, Q et E : rotation. Glisser : déplacer. Double clic : recentrer.</div>
+    <div class="outils" role="group" aria-label="Commandes de la vue">
+      <span class="zoomv" id="zoomv" aria-hidden="true">100 %</span>
+      <button class="outil" id="bLegende" type="button" title="Légende" aria-label="Légende de la scène" aria-pressed="false"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .8-1 1.5v.7"/><path d="M12 17h.01"/></svg></button>
+      <button class="outil" id="bZin" type="button" title="Zoom avant (+)" aria-label="Zoom avant"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.2-4.2M11 8v6M8 11h6"/></svg></button>
+      <button class="outil" id="bZout" type="button" title="Zoom arrière (-)" aria-label="Zoom arrière"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.2-4.2M8 11h6"/></svg></button>
+      <button class="outil" id="bRg" type="button" title="Tourner à gauche (Q)" aria-label="Tourner la vue à gauche"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 0 1 14-5.3"/><path d="M18 3v4h-4"/><path d="M20 12a8 8 0 0 1-14 5.3"/></svg></button>
+      <button class="outil" id="bRd" type="button" title="Tourner à droite (E)" aria-label="Tourner la vue à droite"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 0 0-14-5.3"/><path d="M6 3v4h4"/><path d="M4 12a8 8 0 0 0 14 5.3"/></svg></button>
+      <button class="outil" id="bCentre" type="button" title="Recentrer (double clic, 0)" aria-label="Recentrer la vue"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/></svg></button>
+      <div class="boussole" aria-hidden="true"><svg id="boussole" viewBox="0 0 32 32"><circle cx="16" cy="16" r="13" fill="none" stroke="#4A5875" stroke-width="1.5"/><path d="M16 5l4 11h-8z" fill="#F0C36A"/><path d="M16 27l-4-11h8z" fill="#6b7488"/></svg></div>
+    </div>
+  </main>
+
+  <aside class="fiche" id="fiche" aria-label="Fiche de l’agent" hidden>
+    <section id="pLegende" class="legende-bloc" hidden aria-labelledby="legendeTitre">
+      <div class="entete-liste">
+        <h2 id="legendeTitre" tabindex="-1">Ce que montre la scène</h2>
+        <button class="btn icone" type="button" data-fermer aria-label="Fermer la légende"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+      </div>
+      <ul class="legende">
+        <li><i style="background:#8FD9C4"></i><span>Assis, écran allumé, il tape : en cours</span></li>
+        <li><i style="background:#F0C36A"></i><span>Main levée, bulle « ? », entouré d’ambre : il t’attend</span></li>
+        <li><i style="background:#6F7F9C"></i><span>Sur le banc de l’entrée, ou sablier à son bureau : en file d’attente</span></li>
+        <li><i style="background:#8DA2C0"></i><span>Gobelet en main à la cafétéria : en pause</span></li>
+        <li><i style="background:#59627A"></i><span>Grisé à la cafétéria, dossier rendu : fini</span></li>
+        <li><i style="background:#E0645A"></i><span>Bulle rouge : erreur</span></li>
+      </ul>
+      <ul class="legende lieux">
+        <li><i style="background:#F0C36A"></i><span>Fenêtre ambre qui pulse : quelqu’un attend à cet étage</span></li>
+        <li><i style="background:#9AA3B5"></i><span>Grue et barrière : un étage ou une équipe arrive</span></li>
+        <li><i style="background:#8794AD"></i><span>Ascenseur : un agent change de projet ou s’en va</span></li>
+      </ul>
+    </section>
+
+    <section id="pListe" hidden aria-labelledby="listeTitre">
+      <div class="entete-liste">
+        <h2 id="listeTitre" tabindex="-1">Ils t’attendent</h2>
+        <button class="btn icone" type="button" data-fermer aria-label="Fermer la liste"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+      </div>
+      <div class="liste-attente" id="listeAttente"></div>
+    </section>
+
+    <section id="pDetail" hidden aria-labelledby="dNom">
+      <div class="tete">
+        <canvas id="portrait" width="72" height="68" aria-hidden="true"></canvas>
+        <div>
+          <h2 id="dNom" tabindex="-1"></h2>
+          <p class="sous" id="dRole"></p>
+        </div>
+        <button class="btn icone" type="button" data-fermer aria-label="Fermer la fiche"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+      </div>
+      <div class="question" id="dQuestion" hidden><small>Il attend</small><span id="dQuestionTexte"></span><small class="reste">La réponse se fait dans Boite : « Répondre » ouvre sa conversation.</small></div>
+      <dl>
+        <dt>Service</dt><dd id="dService"></dd>
+        <dt>Supérieur</dt><dd id="dSup"></dd>
+        <dt>Modèle</dt><dd id="dModele"></dd>
+        <dt>État</dt><dd><span class="etat-ligne"><i id="dPastille"></i><span id="dEtat"></span></span></dd>
+        <dt>Depuis</dt><dd id="dDepuis"></dd>
+        <dt>Fichiers</dt><dd><ul id="dFichiers"></ul></dd>
+        <dt>Dernier rapport</dt><dd id="dRapport"></dd>
+      </dl>
+      <div class="boutons">
+        <button class="btn" id="bConv" type="button">
+          <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          Ouvrir la conversation
+        </button>
+        <button class="btn plein" id="bRep" type="button" hidden>
+          <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>
+          Répondre
+        </button>
+        <button class="btn danger" id="bStop" type="button" hidden>Arrêter</button>
+      </div>
+    </section>
+
+    <section id="pPlan" class="plan" hidden aria-labelledby="planTitre">
+      <div class="entete-liste">
+        <h2 id="planTitre" tabindex="-1">Plan de mission</h2>
+        <button class="btn icone" type="button" data-fermer aria-label="Fermer le plan"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+      </div>
+      <p class="resume" id="planResume"></p>
+      <p class="budget" id="planBudget"></p>
+      <table>
+        <thead><tr><th scope="col">Lot et agent</th><th scope="col">Modèle</th><th scope="col">État</th></tr></thead>
+        <tbody id="planCorps"></tbody>
+      </table>
+      <div class="plan-pied">
+        <button class="btn plein" id="bValider" type="button" hidden>Valider le plan</button>
+        <p id="planNote"></p>
+      </div>
+    </section>
+  </aside>
+</div>
+
+<footer class="pied" id="pied" hidden>
+  <label for="rHeure">Heure (démo)</label>
+  <input type="range" id="rHeure" min="0" max="1439" step="1" value="0" aria-label="Heure de la journée">
+  <button class="btn petit" id="bReel" type="button" aria-pressed="true">Heure réelle</button>
+  <button class="btn petit" id="bJour" type="button" aria-pressed="false">Jour en 30 s</button>
+</footer>
+<div class="cache" id="annonce" role="status" aria-live="polite" aria-atomic="true"></div>
+
+<!-- scripts -->
+</body>
+</html>

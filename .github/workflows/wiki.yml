@@ -1,0 +1,46 @@
+name: wiki
+
+# Publie le dossier wiki/ vers le wiki GitHub du dépôt. Le wiki doit avoir reçu une
+# première page à la main (onglet Wiki) pour que <dépôt>.wiki.git existe.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'wiki/**'
+      - '.github/workflows/wiki.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: wiki
+  cancel-in-progress: true
+
+jobs:
+  publier:
+    name: Publier le wiki
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Publier wiki/ vers le wiki GitHub
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          git clone --depth 1 "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.wiki.git" "$RUNNER_TEMP/wiki"
+          rsync -a --delete --exclude '.git' wiki/ "$RUNNER_TEMP/wiki/"
+          cd "$RUNNER_TEMP/wiki"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "Le wiki est déjà à jour."
+            exit 0
+          fi
+          git commit -m "docs: synchronisation du wiki depuis ${GITHUB_SHA::7}"
+          git push

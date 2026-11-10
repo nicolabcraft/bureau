@@ -1,0 +1,56 @@
+name: release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verifier:
+    name: Vérifications
+    uses: ./.github/workflows/ci.yml
+    permissions:
+      contents: read
+
+  publier:
+    name: Publier la version
+    needs: verifier
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version-file: package.json
+      - run: bun install --frozen-lockfile
+      - name: Le tag, package.json et le manifeste ont la même version
+        run: bun scripts/check-release.ts "$GITHUB_REF_NAME"
+      - name: Construire bureau.js
+        run: bun run pack
+      - name: Le manifeste commité est celui que pack produit
+        # bureau.js ne dépend que des sources : le même commit donne le même fichier,
+        # donc le même sha256. S'il diffère, lancer bun run pack en local et commiter boite-plugin.json.
+        run: |
+          if ! git diff --exit-code -- boite-plugin.json; then
+            echo "::error::boite-plugin.json n'est pas celui que bun run pack produit (sha256 ou skills périmés). Lancer bun run pack, commiter le manifeste, puis recréer le tag."
+            exit 1
+          fi
+          sha256sum bureau.js
+      - name: Créer la release GitHub
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          flags=()
+          case "$TAG" in *-*) flags+=(--prerelease) ;; esac
+          gh release create "$TAG" bureau.js --verify-tag --title "Bureau $TAG" --generate-notes "${flags[@]}"

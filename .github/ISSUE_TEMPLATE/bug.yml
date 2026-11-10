@@ -1,0 +1,89 @@
+name: Signaler un bug
+description: Un problème reproductible dans Bureau (vue, service, commandes ou skills).
+labels: [bug, à trier]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Merci de prendre le temps de décrire le problème. Regardez d'abord le [wiki](https://github.com/nicolabcraft/bureau/wiki) : il répond à plusieurs cas fréquents.
+  - type: input
+    id: version-bureau
+    attributes:
+      label: Version de Bureau
+      description: Réglages > Plugins > Bureau, ou le champ version de boite-plugin.json.
+      placeholder: 0.1.0
+    validations:
+      required: true
+  - type: input
+    id: version-boite
+    attributes:
+      label: Version de Boite
+      description: Visible dans les réglages de Boite.
+      placeholder: 2.0.0-beta.1
+    validations:
+      required: true
+  - type: dropdown
+    id: systeme
+    attributes:
+      label: Système
+      description: Celui de la machine où tourne le service Bureau.
+      options:
+        - Windows
+        - macOS
+        - Linux
+        - Autre
+    validations:
+      required: true
+  - type: dropdown
+    id: partie
+    attributes:
+      label: Partie concernée
+      multiple: true
+      options:
+        - La vue (open space)
+        - Le service
+        - Les commandes boite bureau*
+        - Les skills (chef, manager, agent)
+        - L'archivage automatique
+        - L'installation
+        - Je ne sais pas
+    validations:
+      required: true
+  - type: textarea
+    id: etapes
+    attributes:
+      label: Étapes pour reproduire
+      placeholder: |
+        1. Lancer /mission avec ...
+        2. Valider le plan
+        3. Ouvrir la vue Bureau
+    validations:
+      required: true
+  - type: textarea
+    id: attendu
+    attributes:
+      label: Comportement attendu
+    validations:
+      required: true
+  - type: textarea
+    id: obtenu
+    attributes:
+      label: Comportement obtenu
+      description: Ajoutez une capture d'écran si le problème est visuel.
+    validations:
+      required: true
+  - type: textarea
+    id: journaux
+    attributes:
+      label: Journaux
+      description: Sortie de la commande ou journal du service. Retirez les jetons, les liens d'appairage, les chemins personnels et le contenu des conversations.
+      render: text
+  - type: checkboxes
+    id: verifications
+    attributes:
+      label: Avant d'envoyer
+      options:
+        - label: "J'ai cherché dans les issues ouvertes et fermées, ce problème n'y est pas déjà."
+          required: true
+        - label: Je n'ai laissé aucun secret (jeton, lien d'appairage) dans ce formulaire.
+          required: true

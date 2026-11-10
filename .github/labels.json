@@ -1,0 +1,20 @@
+[
+  { "name": "bug", "color": "d73a4a", "description": "Quelque chose ne fonctionne pas comme prévu" },
+  { "name": "amélioration", "color": "a2eeef", "description": "Nouvelle fonction ou amélioration d'une fonction existante" },
+  { "name": "question", "color": "d876e3", "description": "Question d'usage, pas un défaut" },
+  { "name": "documentation", "color": "0075ca", "description": "Wiki, README, docs ou textes d'aide" },
+  { "name": "vue", "color": "fbca04", "description": "La vue open space (web/)" },
+  { "name": "service", "color": "5319e7", "description": "Le service Bureau, son registre et son état (src/)" },
+  { "name": "commandes", "color": "0e8a16", "description": "Les commandes boite bureau*" },
+  { "name": "skills", "color": "1d76db", "description": "Les skills chef, manager et agent" },
+  { "name": "ci", "color": "ededed", "description": "Workflows GitHub Actions, scripts et outillage du dépôt" },
+  { "name": "dépendances", "color": "0366d6", "description": "Mise à jour de dépendances (Dependabot)" },
+  { "name": "sécurité", "color": "b60205", "description": "Concerne la sécurité (les failles se signalent en privé, voir SECURITY.md)" },
+  { "name": "à trier", "color": "fef2c0", "description": "Nouvelle issue, pas encore examinée" },
+  { "name": "bonne première issue", "color": "7057ff", "description": "Accessible à une première contribution" },
+  { "name": "aide bienvenue", "color": "008672", "description": "Une contribution est la bienvenue" },
+  { "name": "bloqué", "color": "e99695", "description": "Attend autre chose (décision, correctif de Boite, réponse)" },
+  { "name": "doublon", "color": "cfd3d7", "description": "Existe déjà ailleurs" },
+  { "name": "invalide", "color": "e4e669", "description": "Ne correspond pas à Bureau ou n'est pas reproductible" },
+  { "name": "ne sera pas traité", "color": "ffffff", "description": "Hors du périmètre de Bureau" }
+]

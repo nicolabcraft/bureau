@@ -1,0 +1,47 @@
+name: Proposer une amélioration
+description: Un besoin que Bureau ne couvre pas encore.
+labels: [amélioration, à trier]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Décrivez d'abord le besoin, pas la solution : c'est ce qui permet de trouver la bonne réponse. Une simple idée ou un retour d'usage peut aussi aller dans les [discussions](https://github.com/nicolabcraft/bureau/discussions).
+  - type: textarea
+    id: besoin
+    attributes:
+      label: Besoin
+      description: Ce que vous essayez de faire, et comment vous vous en passez aujourd'hui.
+    validations:
+      required: true
+  - type: textarea
+    id: proposition
+    attributes:
+      label: Proposition
+      description: Le comportement souhaité, avec un exemple d'usage ou un croquis si cela aide.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives envisagées
+      description: Autres solutions ou contournements essayés, et pourquoi ils ne suffisent pas.
+  - type: dropdown
+    id: partie
+    attributes:
+      label: Partie concernée
+      multiple: true
+      options:
+        - La vue (open space)
+        - Le service
+        - Les commandes boite bureau*
+        - Les skills (chef, manager, agent)
+        - L'archivage automatique
+        - La documentation
+        - Je ne sais pas
+  - type: checkboxes
+    id: verifications
+    attributes:
+      label: Avant d'envoyer
+      options:
+        - label: "J'ai cherché dans les issues ouvertes et fermées, cette demande n'y est pas déjà."
+          required: true

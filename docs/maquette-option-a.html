@@ -1,0 +1,1308 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bureau : open space</title>
+<style>
+:root{
+  --moquette:#2B3445; --mur:#3E4A5F; --bois:#9A6B4B; --ecran:#8FD9C4; --lampe:#F0C36A; --texte:#E8ECF2;
+  --erreur:#E0645A; --fond:#1A212E; --panneau:#222B3A; --panneau2:#2A3547; --ligne:#37435A; --ligne2:#4A5875;
+  --doux:#AAB5C8; --bouton:#2E394D;
+  font-family:"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,sans-serif;
+}
+*{box-sizing:border-box}
+[hidden]{display:none !important}
+html,body{height:100%;margin:0}
+body{background:var(--fond);color:var(--texte);font-size:14px;line-height:1.4;display:flex;flex-direction:column;overflow:hidden}
+button,input{font:inherit;color:inherit}
+svg{display:block;flex:none}
+.ico{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+
+/* barre */
+.barre{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;padding:10px 14px;background:var(--panneau);border-bottom:1px solid var(--ligne);position:relative;z-index:6}
+.titre{margin-right:auto;min-width:0}
+.titre h1{margin:0;font-size:15px;font-weight:600;line-height:1.25}
+.titre p{margin:0;color:var(--doux);font-size:12.5px}
+.actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:34px;padding:6px 12px;border:1px solid var(--ligne2);border-radius:6px;background:var(--bouton);cursor:pointer;font-size:13.5px;font-weight:500;white-space:nowrap}
+.btn:hover{background:#38455C}
+.btn:focus-visible,.who:focus-visible,.menu button:focus-visible,.ligne-liste:focus-visible{outline:2px solid var(--texte);outline-offset:2px}
+.btn[aria-pressed=true].jaune{background:var(--lampe);border-color:var(--lampe);color:#2A2008}
+.btn[aria-pressed=true].vert{background:var(--ecran);border-color:var(--ecran);color:#0F2923}
+.btn.plein{background:var(--lampe);border-color:var(--lampe);color:#2A2008}
+.btn.plein:hover{background:#F5CF85}
+.btn.danger{color:#F4A39B;border-color:#6A4143;background:transparent}
+.btn.danger:hover{background:#3A2A32}
+.btn[disabled]{opacity:.5;cursor:default}
+.btn.icone{min-height:30px;width:30px;padding:0;background:transparent;border-color:transparent}
+.btn.icone:hover{background:var(--panneau2)}
+.compteur{display:flex;gap:14px;font-size:13px;color:var(--doux);flex-wrap:wrap}
+.compteur span{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.compteur i{width:8px;height:8px;display:block}
+.compteur b{color:var(--texte);font-weight:600;font-variant-numeric:tabular-nums}
+.nouvel{position:relative}
+.menu{position:absolute;top:calc(100% + 6px);left:0;z-index:30;min-width:250px;max-width:calc(100vw - 24px);padding:4px;background:var(--panneau);border:1px solid var(--ligne2);border-radius:8px}
+.menu[hidden]{display:none}
+.menu p{margin:0;padding:6px 10px 4px;color:var(--doux);font-size:12.5px}
+.menu button{display:flex;width:100%;justify-content:space-between;gap:16px;align-items:baseline;padding:8px 10px;border:0;border-radius:5px;background:transparent;cursor:pointer;text-align:left;font-size:13.5px}
+.menu button:hover{background:var(--panneau2)}
+.menu button small{color:var(--doux);font-size:12.5px}
+.menu button[disabled]{opacity:.5;cursor:default}
+
+/* scene */
+main{flex:1;min-height:0;display:flex;position:relative}
+.scene{flex:1;min-width:0;overflow:auto;display:flex;flex-direction:column;padding:8px;background:var(--fond)}
+.stage{position:relative;margin:auto;flex:none;--tag:11px;--ilot:12px}
+.stage canvas{display:block;width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges;image-rendering:pixelated}
+.cale{flex:none;height:0}
+.sheet-ouverte .cale{height:min(54dvh,430px)}
+.who{position:absolute;left:0;top:0;margin:0;padding:0;border:0;background:transparent;cursor:pointer;border-radius:3px}
+.who:hover{outline:1px dashed rgba(232,236,242,.55);outline-offset:1px}
+.tag{position:absolute;left:0;top:0;font-size:var(--tag);line-height:1.25;color:var(--texte);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center;pointer-events:none}
+.tag.attend{color:var(--lampe);font-weight:600}
+.tag.fini{color:#8E99AE}
+.ilot{position:absolute;left:0;top:0;font-size:var(--ilot);font-weight:600;color:var(--texte);opacity:.85;pointer-events:none;white-space:nowrap}
+.stage.filtre .tag:not(.attend){opacity:.3}
+.stage.filtre .ilot{opacity:.35}
+.stage.filtre .who:not(.attend){pointer-events:auto}
+.toast{position:absolute;left:50%;top:12px;transform:translateX(-50%);z-index:12;max-width:min(92%,460px);padding:8px 14px;border-radius:6px;background:var(--texte);color:#1A212E;font-size:13.5px;font-weight:500;text-align:center}
+.toast[hidden]{display:none}
+.cache{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* fiche */
+.fiche{background:var(--panneau);border-top:1px solid var(--ligne);overflow:auto;position:absolute;left:0;right:0;bottom:0;z-index:8;max-height:min(54dvh,430px);transform:translateY(102%);transition:transform var(--dur,.2s) cubic-bezier(.22,1,.36,1);padding:14px 16px 18px}
+.fiche[data-ouverte=true]{transform:none}
+@media (min-width:980px){
+  .fiche{position:static;transform:none;max-height:none;width:310px;flex:none;border-top:0;border-left:1px solid var(--ligne)}
+  .sheet-ouverte .cale{height:0}
+}
+.fiche h2{margin:0;font-size:16px;font-weight:600;line-height:1.25}
+.fiche h3{margin:0 0 8px;font-size:14px;font-weight:600}
+.fiche p{margin:0}
+.vide p{color:var(--doux);margin:6px 0 16px}
+.legende{list-style:none;margin:0;padding:0;display:grid;gap:10px;font-size:13px}
+.legende li{display:grid;grid-template-columns:10px 1fr;gap:10px;align-items:start;color:var(--texte)}
+.legende i{width:10px;height:10px;margin-top:4px}
+.tete{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;margin-bottom:12px}
+.tete canvas{width:72px;height:68px;image-rendering:pixelated;background:var(--moquette);border-radius:4px;display:block}
+.tete .sous{color:var(--doux);font-size:13px}
+dl{margin:0;display:grid;grid-template-columns:96px 1fr;gap:8px 12px;font-size:13.5px}
+dt{color:var(--doux)}
+dd{margin:0;min-width:0;overflow-wrap:anywhere}
+dd ul{margin:0;padding:0;list-style:none;display:grid;gap:2px}
+.etat-ligne{display:inline-flex;align-items:center;gap:8px}
+.etat-ligne i{width:10px;height:10px;display:block}
+.question{margin:0 0 12px;padding:8px 10px;border-left:3px solid var(--lampe);background:var(--panneau2);font-size:13.5px}
+.question small{display:block;color:var(--doux);font-size:12.5px;margin-bottom:2px}
+.boutons{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.reponse{margin-top:12px;display:grid;gap:8px}
+.reponse[hidden]{display:none}
+.reponse input{min-height:34px;padding:6px 10px;border-radius:6px;border:1px solid var(--ligne2);background:var(--fond);width:100%}
+.reponse input:focus-visible{outline:2px solid var(--texte);outline-offset:1px}
+.reponse .rang{display:flex;gap:8px;flex-wrap:wrap}
+.liste-attente{display:grid;gap:8px;margin-top:10px}
+.ligne-liste{display:grid;gap:2px;text-align:left;width:100%;padding:10px 12px;border:1px solid var(--ligne2);border-left:3px solid var(--lampe);border-radius:6px;background:var(--panneau2);cursor:pointer}
+.ligne-liste:hover{background:#314058}
+.ligne-liste small{color:var(--doux);font-size:12.5px}
+.entete-liste{display:flex;justify-content:space-between;align-items:center}
+.plan{margin-top:2px}
+.plan table{width:100%;border-collapse:collapse;font-size:13px}
+.plan th{text-align:left;font-weight:500;color:var(--doux);padding:4px 6px 6px 0;border-bottom:1px solid var(--ligne)}
+.plan td{padding:7px 6px 7px 0;border-bottom:1px solid var(--ligne);vertical-align:top}
+.plan td:last-child,.plan th:last-child{padding-right:0}
+.plan .a-valider td{color:var(--lampe)}
+.plan .sup{display:block;color:var(--doux);font-size:12px}
+.plan .pied{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:14px}
+.plan .pied p{color:var(--doux);font-size:12.5px;flex:1 1 180px}
+
+@media (max-width:560px){
+  .barre{padding:8px 10px;gap:6px 12px}
+  .titre{flex:1 1 100%}
+  .btn{padding:6px 10px;font-size:13px}
+  .fiche{padding:12px 12px 16px}
+  dl{grid-template-columns:84px 1fr}
+}
+@media (prefers-reduced-motion:reduce){
+  .fiche{transition:none}
+}
+</style>
+</head>
+<body>
+
+<header class="barre">
+  <div class="titre">
+    <h1>Refonte de l’espace client</h1>
+    <p id="duree">Mission lancée il y a 42 min</p>
+  </div>
+  <div class="actions">
+    <button class="btn jaune" id="bAttente" aria-pressed="false">
+      <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 11V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2"/><path d="M14 10V4a2 2 0 0 0-2-2a2 2 0 0 0-2 2v2"/><path d="M10 10.5V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg>
+      Qui m’attend
+    </button>
+    <button class="btn vert" id="bSimuler" aria-pressed="true" title="Mettre la simulation en pause">
+      <span id="icoSim"></span>
+      Simuler
+    </button>
+    <div class="nouvel">
+      <button class="btn" id="bNouvel" aria-haspopup="true" aria-expanded="false" aria-controls="menuNouvel">
+        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+        Nouvel agent
+        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+      </button>
+      <div class="menu" id="menuNouvel" hidden></div>
+    </div>
+    <button class="btn" id="bPlan" aria-pressed="false">Plan de mission</button>
+  </div>
+  <div class="compteur" id="compteur" aria-label="Compteur des agents"></div>
+</header>
+
+<main id="principal">
+  <div class="scene" id="scene">
+    <div class="stage" id="stage">
+      <canvas id="cv" aria-hidden="true"></canvas>
+    </div>
+    <div class="cale" aria-hidden="true"></div>
+  </div>
+  <div class="toast" id="toast" role="status" hidden></div>
+  <div class="cache" id="annonce" aria-live="polite"></div>
+
+  <aside class="fiche" id="fiche" aria-label="Fiche de l’agent" data-ouverte="false">
+    <section class="vide" id="pVide">
+      <h2>Clique un agent</h2>
+      <p>Sa fiche s’affiche ici. Sur la scène, la posture dit l’état.</p>
+      <ul class="legende">
+        <li><i style="background:#8FD9C4"></i><span>Écran allumé, mains sur le clavier : en cours</span></li>
+        <li><i style="background:#F0C36A"></i><span>Main levée et bulle ? : il attend l’utilisateur</span></li>
+        <li><i style="background:#E0645A"></i><span>Bulle rouge, mains sur la tête : erreur</span></li>
+        <li><i style="background:#8DA2C0"></i><span>Gobelet à la machine à café : en pause</span></li>
+        <li><i style="background:#6F7F9C"></i><span>Assis près de la porte : en file d’attente</span></li>
+        <li><i style="background:#59627A"></i><span>Grisé, dossier chez son manager : fini</span></li>
+      </ul>
+    </section>
+
+    <section id="pListe" hidden>
+      <div class="entete-liste">
+        <h2>Ils t’attendent</h2>
+        <button class="btn icone" data-fermer aria-label="Fermer la liste"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+      </div>
+      <div class="liste-attente" id="listeAttente"></div>
+    </section>
+
+    <section id="pDetail" hidden>
+      <div class="tete">
+        <canvas id="portrait" width="72" height="68" aria-hidden="true"></canvas>
+        <div>
+          <h2 id="dNom"></h2>
+          <p class="sous" id="dRole"></p>
+        </div>
+        <button class="btn icone" data-fermer aria-label="Fermer la fiche"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+      </div>
+      <div class="question" id="dQuestion" hidden><small>Il demande</small><span id="dQuestionTexte"></span></div>
+      <dl>
+        <dt>Supérieur</dt><dd id="dSup"></dd>
+        <dt>Modèle</dt><dd id="dModele"></dd>
+        <dt>État</dt><dd><span class="etat-ligne"><i id="dPastille"></i><span id="dEtat"></span></span></dd>
+        <dt>Depuis</dt><dd id="dDepuis"></dd>
+        <dt>Consigne</dt><dd id="dConsigne"></dd>
+        <dt>Fichiers</dt><dd><ul id="dFichiers"></ul></dd>
+      </dl>
+      <div class="boutons">
+        <button class="btn" id="bConv">
+          <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          Ouvrir la conversation
+        </button>
+        <button class="btn plein" id="bRep" hidden>
+          <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>
+          Répondre
+        </button>
+        <button class="btn danger" id="bStop" hidden>Arrêter</button>
+      </div>
+      <form class="reponse" id="reponse" hidden>
+        <div class="rang" id="repPerm" hidden>
+          <button type="button" class="btn plein" data-rep="oui">Autoriser</button>
+          <button type="button" class="btn" data-rep="non">Refuser</button>
+        </div>
+        <div id="repTexte" hidden>
+          <label for="repChamp" class="cache">Ta réponse</label>
+          <input id="repChamp" type="text" placeholder="Ta réponse" autocomplete="off">
+          <div class="rang" style="margin-top:8px"><button type="submit" class="btn plein">Envoyer</button></div>
+        </div>
+      </form>
+    </section>
+
+    <section id="pPlan" class="plan" hidden>
+      <div class="entete-liste">
+        <h2>Plan de mission</h2>
+        <button class="btn icone" data-fermer aria-label="Fermer le plan"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+      </div>
+      <table>
+        <thead><tr><th scope="col">Lot et agent</th><th scope="col">Modèle</th><th scope="col">État</th></tr></thead>
+        <tbody id="planCorps"></tbody>
+      </table>
+      <div class="pied">
+        <button class="btn plein" id="bValider">Valider le plan</button>
+        <p id="planNote"></p>
+      </div>
+    </section>
+  </aside>
+</main>
+
+<script>
+(() => {
+'use strict';
+const $ = (s) => document.querySelector(s);
+const REDUCE = window.matchMedia('(prefers-reduced-motion: reduce)');
+const MIN = 60000;
+
+/* ------------------------------------------------------------ palette */
+const P = {moq:'#2B3445', mur:'#3E4A5F', bois:'#9A6B4B', ecran:'#8FD9C4', lampe:'#F0C36A', texte:'#E8ECF2', err:'#E0645A'};
+const OUT = '#151A25', DARK = '#1B1F2A';
+const SKINS = ['#F2C9A5','#E3AE86','#BD835C','#8A5A3B'];
+const HAIRS = ['#2A2018','#5A3A22','#C08A3E','#8C3B2E','#20293A','#B9B9B9'];
+const SHIRTS = ['#6C8EBF','#A98BC9','#D98F5B','#7FB77E','#D97A97'];
+const ETAT = {
+  running:{lib:'En cours', col:'#8FD9C4'},
+  waiting:{lib:'Attend l’utilisateur', col:'#F0C36A'},
+  queued:{lib:'En file d’attente', col:'#6F7F9C'},
+  idle:{lib:'En pause', col:'#8DA2C0'},
+  done:{lib:'Fini', col:'#59627A'},
+  error:{lib:'En erreur', col:'#E0645A'}
+};
+const ROLE = {chef:'Chef de projet', mgr:'Manager', agent:'Agent'};
+const SERVICES = [
+  {k:'backend', nom:'Backend', mgr:'Manager Backend'},
+  {k:'design', nom:'Design', mgr:'Manager Design'},
+  {k:'qualite', nom:'Qualité', mgr:'Manager Qualité'}
+];
+
+/* ------------------------------------------------------------ données */
+let uid = 0;
+const T0 = performance.now();
+const ago = (m) => performance.now() - m * MIN;
+function mk(o){ return Object.assign({id:++uid, state:'running', q:null, delivered:false, delivering:false, leaving:false, slot:-1, svc:-1, stopped:false}, o); }
+
+const A = [
+  mk({nom:'Chef de projet', role:'chef', sup:'Utilisateur', modele:'Opus 5.5', since:ago(42), look:{skin:1,hair:0,style:0,shirt:0},
+      consigne:'Refonte de l’espace client : découpe en lots, confie-les aux managers, valide la fin.', fichiers:['docs/refonte-espace-client.md']}),
+  mk({nom:'Manager Backend', role:'mgr', svc:0, sup:'Chef de projet', modele:'Sonnet 5.5', since:ago(38), look:{skin:2,hair:4,style:0,shirt:0},
+      consigne:'Brief les agents comptes et facturation, relis chaque rapport avant de le remonter.', fichiers:['backend/Cargo.toml','backend/src/lib.rs']}),
+  mk({nom:'Manager Design', role:'mgr', svc:1, sup:'Chef de projet', modele:'Opus 5.5', since:ago(7), state:'idle', look:{skin:0,hair:3,style:1,shirt:0},
+      consigne:'Valide la maquette d’accueil et la cohérence du pied de page avec la charte.', fichiers:['design/charte.fig']}),
+  mk({nom:'Manager Qualité', role:'mgr', svc:2, sup:'Chef de projet', modele:'Sonnet 5.5', since:ago(35), look:{skin:3,hair:0,style:2,shirt:0},
+      consigne:'Prépare le plan de tests du portail et organise la relecture de sécurité.', fichiers:['tests/plan-portail.md']}),
+  mk({nom:'Module comptes', role:'agent', svc:0, slot:0, sup:'Manager Backend', modele:'Gemini 3.8 Flash', since:ago(12), look:{skin:1,hair:1,style:0,shirt:0},
+      consigne:'Crée l’inscription, la connexion et la réinitialisation du mot de passe.', fichiers:['backend/src/accounts/mod.rs','backend/src/accounts/session.rs']}),
+  mk({nom:'Worker Stripe', role:'agent', svc:0, slot:1, sup:'Manager Backend', modele:'Sonnet 5.5', since:ago(4), state:'waiting', q:'Autoriser cargo test ?', look:{skin:0,hair:2,style:1,shirt:2},
+      consigne:'Ajoute le webhook invoice.paid et ses tests.', fichiers:['backend/src/billing/stripe.rs','backend/tests/stripe_webhook.rs']}),
+  mk({nom:'Migration SQL', role:'agent', svc:0, slot:2, sup:'Manager Backend', modele:'Haiku 5.5', since:ago(9), state:'done', delivered:true, look:{skin:2,hair:5,style:2,shirt:3},
+      consigne:'Écris la migration qui sépare les clients des organisations.', fichiers:['backend/migrations/0042_organisations.sql']}),
+  mk({nom:'Maquettes accueil', role:'agent', svc:1, slot:0, sup:'Manager Design', modele:'Sonnet 5.5', since:ago(15), look:{skin:3,hair:4,style:1,shirt:1},
+      consigne:'Dessine l’accueil de l’espace client : services actifs, factures et tickets.', fichiers:['design/accueil.fig','web/src/pages/Accueil.vue']}),
+  mk({nom:'Pied de page', role:'agent', svc:1, slot:1, sup:'Manager Design', modele:'Haiku 5.5', since:ago(6), state:'done', delivered:true, look:{skin:1,hair:0,style:0,shirt:4},
+      consigne:'Reprends le pied de page : liens légaux, choix de la langue, état des services.', fichiers:['web/src/components/PiedDePage.vue']}),
+  mk({nom:'Tests portail', role:'agent', svc:2, slot:0, sup:'Manager Qualité', modele:'Gemini 3.8 Flash', since:ago(2), state:'queued', look:{skin:0,hair:3,style:0,shirt:3},
+      consigne:'Écris les tests de bout en bout du portail client.', fichiers:['tests/e2e/portail.spec.ts']}),
+  mk({nom:'Relecture sécurité', role:'agent', svc:2, slot:1, sup:'Manager Qualité', modele:'Opus 4.8', since:ago(18), look:{skin:2,hair:1,style:2,shirt:1},
+      consigne:'Relis l’authentification et les en-têtes HTTP du portail.', fichiers:['backend/src/accounts/session.rs','backend/src/http/headers.rs']})
+];
+const A_BY_ID = new Map(A.map(a => [a.id, a]));
+
+const POOLS = [
+  [ // backend
+    {nom:'Webhook paiements', c:'Rejoue les paiements échoués et marque les factures réglées.', f:['backend/src/billing/retry.rs']},
+    {nom:'Cache de sessions', c:'Passe le stockage des sessions sur Redis avec expiration.', f:['backend/src/accounts/cache.rs']},
+    {nom:'Export des factures', c:'Génère un export PDF et CSV des factures du mois.', f:['backend/src/billing/export.rs']},
+    {nom:'Quotas API', c:'Limite les appels par client et renvoie un code 429 clair.', f:['backend/src/http/quotas.rs']}
+  ],
+  [ // design
+    {nom:'Page des tarifs', c:'Dessine la grille des offres avec les options mensuelles.', f:['design/tarifs.fig']},
+    {nom:'Icônes services', c:'Redessine les icônes des services en trait fin.', f:['design/icones.fig']},
+    {nom:'États vides', c:'Écris et dessine les écrans vides : aucune facture, aucun ticket.', f:['design/etats-vides.fig']},
+    {nom:'Thème sombre', c:'Décline la charte en thème sombre accessible.', f:['design/theme-sombre.fig']}
+  ],
+  [ // qualité
+    {nom:'Tests API', c:'Couvre les routes de facturation avec des tests d’intégration.', f:['backend/tests/api_billing.rs']},
+    {nom:'Revue des accès', c:'Vérifie les droits de chaque rôle sur les pages du portail.', f:['tests/acces/roles.md']},
+    {nom:'Tests de charge', c:'Simule 2 000 connexions simultanées sur le portail.', f:['tests/charge/portail.js']},
+    {nom:'Contrôle accessibilité', c:'Passe les pages d’accueil et de facturation au contrôle RGAA.', f:['tests/a11y/rapport.md']}
+  ]
+];
+const QUESTIONS = [
+  'Autoriser cargo test ?', 'Autoriser npm install ?', 'Autoriser la suppression de accounts_old.rs ?',
+  'Quel format de date pour les factures ?', 'Garder l’ancienne route /api/v1/clients ?', 'Autoriser git push sur la branche refonte ?'
+];
+const MODELES = ['Opus 5.5','Sonnet 5.5','Haiku 5.5','Gemini 3.8 Flash','Opus 4.8'];
+
+/* ------------------------------------------------------------ dispositions */
+const UW = 40, UH = 30;
+let L = null;
+function makeLayout(mode){
+  const wide = mode === 'wide';
+  const o = {mode, wide};
+  o.W = wide ? 336 : 228;
+  o.H = wide ? 250 : 380;
+  o.corr = wide ? [8,114,222,328] : [8,114,220];
+  const pos = wide ? [[12,62],[120,62],[228,62]] : [[12,64],[120,64],[12,216]];
+  o.isl = SERVICES.map((s,i) => {
+    const [x,y] = pos[i];
+    return {k:s.k, nom:s.nom, x, y, w:96, h:144,
+      mgr:{cx:x+28, cy:y+6},
+      slots:[0,1,2,3].map(k => ({cx:x+4+(k%2)*48, cy:y+54+Math.floor(k/2)*48}))};
+  });
+  o.office = wide ? {x:12,y:4,w:144,h:56} : {x:12,y:4,w:204,h:56};
+  o.chief = {cx:64, cy:16};
+  o.board = wide ? {x:170,y:3,w:56,h:20} : {x:130,y:3,w:56,h:20};
+  if(wide){
+    o.counter = {x:240,y:14,w:80};
+    o.spots = [250,272,294,316].map(x => ({x, y:46}));
+    o.chairs = [60,84,108,132].map(x => ({x, y:230}));
+    o.door = {x:28, y:238, wallY:242};
+    o.lounge = null;
+  } else {
+    o.counter = {x:132,y:226,w:76};
+    o.spots = [142,164,186,208].map(x => ({x, y:258}));
+    o.chairs = [142,164,186,208].map(x => ({x, y:342}));
+    o.door = {x:172, y:372, wallY:376};
+    o.lounge = {x:120, y:216, w:96, h:144};
+  }
+  return o;
+}
+
+/* ------------------------------------------------------------ sprites */
+const spriteCache = new Map();
+function grayHex(h){
+  const n = parseInt(h.slice(1), 16);
+  const r = n >> 16, g = (n >> 8) & 255, b = n & 255;
+  const l = 0.3*r + 0.59*g + 0.11*b;
+  const f = v => Math.max(0, Math.min(255, Math.round(0.8*(l*0.86 + v*0.14) + 12)));
+  return '#' + [f(r), f(g), f(b)].map(v => v.toString(16).padStart(2,'0')).join('');
+}
+function build(k){
+  const GW = 16, GH = 24;
+  const g = Array.from({length:GH}, () => new Array(GW).fill(null));
+  const px = (x,y,c) => { if(x>=0 && x<GW && y>=0 && y<GH) g[y][x] = c; };
+  const B = (x,y,w,h,c) => { for(let j=0;j<h;j++) for(let i=0;i<w;i++) px(x+i,y+j,c); };
+  const sk = SKINS[k.skin], hr = HAIRS[k.hair], role = k.role, pose = k.pose, f = k.f;
+  const seated = pose.startsWith('s_');
+  let body, pants, shoe = '#12161F';
+  if(role === 'chef'){ body = '#232A3E'; pants = '#1A1F2E'; }
+  else if(role === 'mgr'){ body = '#D5E1F2'; pants = '#2B3042'; }
+  else { body = SHIRTS[k.shirt]; pants = '#4A5C85'; }
+  const agt = role === 'agent';
+
+  // cheveux arrière
+  if(k.style === 1){ B(3,3,2,6,hr); B(11,3,2,6,hr); }
+  // visage
+  B(5,3,6,1,sk); B(4,4,8,4,sk);
+  // cheveux avant
+  if(k.style === 2){ B(4,0,8,1,hr); B(3,1,10,3,hr); px(3,4,hr); px(12,4,hr); }
+  else { B(5,0,6,1,hr); B(4,1,8,2,hr); B(4,3,1,1,hr); B(11,3,1,1,hr); B(5,3,3,1,hr); }
+  if(k.style === 1){ B(5,3,6,1,hr); }
+  // yeux, bouche
+  px(6,5,DARK); px(9,5,DARK);
+  if(pose === 's_err'){ B(6,7,4,1,'#8A3F3F'); px(5,8,sk); px(6,4,hr); px(9,4,hr); }
+  else if(pose === 's_wait'){ px(7,7,'#8A3F3F'); px(8,7,'#8A3F3F'); px(7,6,'#8A3F3F'); }
+  else { B(7,7,2,1,'#8A3F3F'); }
+  // casque audio (agents)
+  if(agt){
+    B(4,1,8,1,'#D5DBE8'); B(3,3,2,4,'#D5DBE8'); B(11,3,2,4,'#D5DBE8');
+    px(3,4,'#7C879E'); px(12,4,'#7C879E');
+  }
+  // cou
+  B(7,8,2,1,sk);
+  // torse
+  const torsoH = 8;
+  B(3,9,10,torsoH,body);
+  if(role === 'chef'){
+    B(6,9,4,2,'#EDEFF4'); B(7,9,2,6,'#8E3B46'); px(7,9,'#EDEFF4'); px(8,9,'#EDEFF4');
+    B(5,9,1,4,'#323B55'); B(10,9,1,4,'#323B55'); B(7,10,2,1,'#A24A57');
+  } else if(role === 'mgr'){
+    B(6,9,4,1,'#FFFFFF'); B(6,10,1,4,'#2F9C86'); B(9,10,1,4,'#2F9C86'); B(7,13,2,2,'#FFFFFF'); px(7,13,'#8FD9C4');
+  } else {
+    B(7,9,2,1,sk);
+  }
+  // bras
+  const longSleeve = !agt;
+  const upper = body;
+  const armDown = (x, dy, hands) => {
+    B(x,10+dy,2,3,upper);
+    if(longSleeve){ B(x,13+dy,2,3,upper); B(x,16+dy,2,2,sk); }
+    else { B(x,13+dy,2,5,sk); }
+  };
+  if(seated){
+    if(pose === 's_type'){
+      B(2,9,2,6,upper); B(12,9,2,6,upper);
+      B(3,15+f,4,2,sk); B(9,15+(1-f),4,2,sk);
+    } else if(pose === 's_wait'){
+      B(2,9,2,6,upper); B(3,15,4,2,sk);
+      B(12,9,2,2,upper); B(13,5,2,6,upper); B(13+f,2,2,3,sk);
+    } else if(pose === 's_err'){
+      B(2,8,2,3,upper); B(2,4,2,4,sk); B(12,8,2,3,upper); B(12,4,2,4,sk);
+    } else if(pose === 's_q'){
+      B(2,9,2,6,upper); B(12,9,2,6,upper);
+      B(4,13,8,3,sk); B(7,11,2,4,f ? '#8FD9C4' : '#CFE9F2'); B(3,14,2,2,sk); B(11,14,2,2,sk);
+    } else { // s_done
+      B(2,9,2,6,upper); B(12,9,2,6,upper); B(3,14,10,2,upper); B(6,15,4,2,sk);
+    }
+  } else if(pose === 'cup'){
+    armDown(1,0);
+    B(13,10,2,3,upper);
+    if(f === 2){ // gorgée
+      B(10,9,3,3,upper); B(10,8,3,2,sk); B(9,4,4,4,'#F4F4F4'); B(9,4,4,1,'#6B3F2A'); px(13,5,'#F4F4F4'); px(13,6,'#F4F4F4');
+    } else {
+      B(12,11,3,2,sk); B(12,7,3,4,'#F4F4F4'); B(12,7,3,1,'#6B3F2A'); px(15,8,'#F4F4F4'); px(15,9,'#F4F4F4');
+      if(f === 0) { px(13,5,'#CFD6E6'); px(14,4,'#CFD6E6'); } else if(f === 1){ px(14,5,'#CFD6E6'); px(13,4,'#CFD6E6'); }
+    }
+  } else { // marche (w)
+    const sw = [0,1,0,-1][f];
+    armDown(1, sw);
+    if(k.carry){
+      B(13,10,2,5,upper); B(13,15,2,2,sk);
+      if(k.carry === 'folder'){ B(11,16,5,5,'#E3D3A8'); B(11,15,3,1,'#C9B98C'); B(12,18,3,1,'#C9B98C'); }
+      else { B(10,17,6,5,'#6B4A32'); B(12,16,2,1,'#3F2B1D'); B(10,19,6,1,'#563A27'); B(12,19,2,1,'#C9B79C'); }
+    } else armDown(13, -sw);
+  }
+  // jambes
+  if(!seated){
+    {
+      let l1 = 6, l2 = 6;
+      if(pose === 'w'){ if(f === 1) l1 = 5; if(f === 3) l2 = 5; }
+      B(4,17,3,l1,pants); B(9,17,3,l2,pants);
+      B(4,17+l1-2,3,2,shoe); B(9,17+l2-2,3,2,shoe);
+    }
+  }
+  if(k.gray){
+    for(let y=0;y<GH;y++) for(let x=0;x<GW;x++){
+      const c = g[y][x];
+      if(c && c[0] === '#') g[y][x] = grayHex(c);
+    }
+  }
+  const cv = document.createElement('canvas');
+  cv.width = GW + 2; cv.height = GH + 2;
+  const c = cv.getContext('2d');
+  const at = (x,y) => (x>=0 && x<GW && y>=0 && y<GH) ? g[y][x] : null;
+  for(let y=-1;y<=GH;y++) for(let x=-1;x<=GW;x++){
+    const v = at(x,y);
+    if(v){ if(v.startsWith('rgba')) continue; c.fillStyle = v; c.fillRect(x+1,y+1,1,1); }
+    else if(at(x-1,y) || at(x+1,y) || at(x,y-1) || at(x,y+1)){ c.fillStyle = OUT; c.fillRect(x+1,y+1,1,1); }
+  }
+  return cv;
+}
+function sprite(k){
+  const key = [k.role,k.skin,k.hair,k.style,k.shirt,k.pose,k.f,k.gray?1:0,k.carry||''].join('|');
+  let s = spriteCache.get(key);
+  if(!s){ s = build(k); spriteCache.set(key, s); }
+  return s;
+}
+
+/* ------------------------------------------------------------ monde */
+const E = new Map();
+const cv = $('#cv'), ctx = cv.getContext('2d');
+ctx.imageSmoothingEnabled = false;
+const stage = $('#stage');
+let bgC = null, fgC = null, S = 2;
+let T = 0;
+let sel = null, filtreAttente = false, listeFermee = false, planOuvert = false;
+let simOn = true;
+const folderPop = {};
+let planValide = false;
+
+const R = (c,x,y,w,h,col) => { c.fillStyle = col; c.fillRect(x,y,w,h); };
+
+function want(e){
+  const a = e.a;
+  if(a.leaving) return 'door';
+  if(a.delivering) return 'mgr';
+  if(a.state === 'idle' && a.role !== 'chef') return 'coffee';
+  if(a.state === 'queued') return 'chair';
+  return 'seat';
+}
+function seatOf(a){
+  if(a.role === 'chef') return L.chief;
+  if(a.role === 'mgr') return L.isl[a.svc].mgr;
+  return L.isl[a.svc].slots[a.slot] || L.isl[a.svc].slots[0];
+}
+function standOf(e, at){
+  const a = e.a;
+  if(at === 'seat'){ const s = seatOf(a); return {x:s.cx+17, y:s.cy+34}; }
+  if(at === 'coffee') return L.spots[e.spot == null ? 0 : e.spot];
+  if(at === 'chair') return L.chairs[e.chair == null ? 0 : e.chair];
+  if(at === 'mgr'){ const m = L.isl[a.svc].mgr; return {x:m.cx+4, y:m.cy+34}; }
+  return {x:L.door.x, y:L.door.y};
+}
+function route(S0, D){
+  let c = L.corr[0], best = 1e9;
+  for(const x of L.corr){ const k = Math.abs(S0.x-x) + Math.abs(D.x-x); if(k < best){ best = k; c = x; } }
+  const pts = [[c,S0.y],[c,D.y],[D.x,D.y]];
+  const out = []; let px = S0.x, py = S0.y;
+  for(const p of pts){ if(p[0] !== px || p[1] !== py){ out.push(p); px = p[0]; py = p[1]; } }
+  return out;
+}
+function freeIndex(key, n){
+  const used = new Set();
+  for(const e of E.values()) if(e[key] != null) used.add(e[key]);
+  for(let i=0;i<n;i++) if(!used.has(i)) return i;
+  return null;
+}
+function newEnt(a, at, spawn){
+  const e = {a, id:a.id, at, dest:at, x:0, y:0, path:[], moving:false, spot:null, chair:null, pause:0};
+  E.set(a.id, e);
+  if(at === 'coffee') e.spot = freeIndex('spot', L.spots.length);
+  if(at === 'chair') e.chair = freeIndex('chair', L.chairs.length);
+  const st = standOf(e, at);
+  e.x = st.x; e.y = spawn ? L.H + 26 : st.y;
+  if(spawn){ e.at = 'door'; e.dest = 'door'; }
+  return e;
+}
+function startRoute(e, to){
+  const from = {x:e.x, y:e.y};
+  if(e.at === 'coffee') e.spot = null;
+  if(e.at === 'chair') e.chair = null;
+  if(to === 'coffee') e.spot = freeIndex('spot', L.spots.length);
+  if(to === 'chair') e.chair = freeIndex('chair', L.chairs.length);
+  if(to === 'coffee' && e.spot == null) return false;
+  if(to === 'chair' && e.chair == null) return false;
+  const D = standOf(e, to);
+  let pts = [];
+  if(e.at === 'door' && e.y > L.door.y){ pts.push([L.door.x, L.door.y]); from.x = L.door.x; from.y = L.door.y; }
+  pts = pts.concat(route(from, D));
+  if(to === 'door') pts.push([L.door.x, L.H + 26]);
+  e.dest = to;
+  if(REDUCE.matches){
+    e.path = []; e.moving = false; e.at = to; e.x = D.x; e.y = D.y; return true;
+  }
+  e.path = pts; e.moving = true;
+  return true;
+}
+function stepEnt(e, dt){
+  if(e.moving){
+    let rest = 46 * dt;
+    while(rest > 0 && e.path.length){
+      const [tx,ty] = e.path[0];
+      const dx = tx - e.x, dy = ty - e.y, d = Math.hypot(dx,dy);
+      if(d <= rest){ e.x = tx; e.y = ty; rest -= d; e.path.shift(); }
+      else { e.x += dx/d*rest; e.y += dy/d*rest; rest = 0; }
+    }
+    if(!e.path.length){
+      e.moving = false; e.at = e.dest;
+      const st = standOf(e, e.at);
+      if(e.at !== 'door'){ e.x = st.x; e.y = st.y; }
+      if(e.at === 'door' && e.a.leaving){ removeAgent(e.a); }
+    }
+    return;
+  }
+  if(e.pause > 0){ e.pause -= dt; return; }
+  const a = e.a;
+  let w = want(e);
+  if(w === 'mgr' && e.at === 'mgr'){
+    a.delivering = false; a.delivered = true; folderPop[a.svc] = performance.now() + 700;
+    e.pause = 0.5; refreshUI(); return;
+  }
+  if(w !== e.at){
+    if(!startRoute(e, w) && w !== 'seat'){ if(e.at !== 'seat') startRoute(e, 'seat'); }
+  }
+}
+function removeAgent(a){
+  const e = E.get(a.id);
+  if(e){ e.who.remove(); e.tag.remove(); }
+  E.delete(a.id);
+  const i = A.indexOf(a); if(i >= 0) A.splice(i,1);
+  A_BY_ID.delete(a.id);
+  if(sel === a.id) sel = null;
+  refreshUI();
+}
+
+/* ------------------------------------------------------------ fond */
+function renderBg(){
+  const c0 = document.createElement('canvas'); c0.width = L.W; c0.height = L.H;
+  const c = c0.getContext('2d');
+  R(c,0,0,L.W,L.H,P.moq);
+  let s = 12345;
+  for(let y=0;y<L.H;y++) for(let x=0;x<L.W;x++){
+    s = (s*1103515245 + 12345) & 0x7fffffff;
+    const v = (s >> 8) % 41;
+    if(v === 0) R(c,x,y,1,1,'#303B4E'); else if(v === 1) R(c,x,y,1,1,'#273041');
+  }
+  // mur du fond
+  R(c,0,0,L.W,26,P.mur); R(c,0,0,L.W,2,'#4A5772');
+  for(let x=28;x<L.W;x+=28) R(c,x,2,1,21,'#38435A');
+  R(c,0,23,L.W,3,'#2F3A4E'); R(c,0,26,L.W,1,'#232B3A'); R(c,0,27,L.W,1,'#283140');
+  // tapis des îlots
+  for(const i of L.isl){
+    R(c,i.x,i.y,i.w,i.h,'#313D52');
+    R(c,i.x,i.y,i.w,1,'#3E4C66'); R(c,i.x,i.y+i.h-1,i.w,1,'#262F40'); R(c,i.x,i.y,1,i.h,'#3A4860'); R(c,i.x+i.w-1,i.y,1,i.h,'#262F40');
+    R(c,i.x+3,i.y+3,i.w-6,1,'#38465E'); R(c,i.x+3,i.y+i.h-4,i.w-6,1,'#38465E'); R(c,i.x+3,i.y+3,1,i.h-6,'#38465E'); R(c,i.x+i.w-4,i.y+3,1,i.h-6,'#38465E');
+  }
+  if(L.lounge){
+    const l = L.lounge;
+    R(c,l.x,l.y,l.w,l.h,'#35414F'); R(c,l.x,l.y,l.w,1,'#42505F'); R(c,l.x,l.y+l.h-1,l.w,1,'#28323E');
+    R(c,l.x,l.y,1,l.h,'#3E4B5A'); R(c,l.x+l.w-1,l.y,1,l.h,'#28323E');
+    for(let y=l.y+4;y<l.y+l.h-3;y+=8) R(c,l.x+4,y,l.w-8,1,'#3A4756');
+  }
+  // bureau vitré : sol
+  const o = L.office;
+  R(c,o.x,26,o.w,o.h-22,'#384661'); R(c,o.x,26,o.w,1,'#2E3A52');
+  for(let x=o.x+8;x<o.x+o.w;x+=16) R(c,x,27,1,o.h-24,'#34415A');
+  // étagère
+  const sx = o.x + 6;
+  R(c,sx,3,30,24,'#6B4A32'); R(c,sx+1,4,28,22,'#4D3524');
+  const cols = ['#8FD9C4','#E0645A','#F0C36A','#A9BBD6','#D98F5B','#E8ECF2'];
+  for(let r=0;r<3;r++){
+    const y = 5 + r*7;
+    R(c,sx+1,y+6,28,1,'#6B4A32');
+    for(let b=0;b<9;b++){ const h = 4 + ((b*7+r*3)%3); R(c,sx+2+b*3,y+6-h,2,h,cols[(b+r*2)%cols.length]); }
+  }
+  // plante du bureau
+  plant(c, o.x + o.w - 18, 36);
+  // lampadaire
+  R(c,o.x+o.w-38,28,1,26,'#7B859A'); R(c,o.x+o.w-41,51,7,2,'#7B859A'); R(c,o.x+o.w-42,23,9,6,P.lampe); R(c,o.x+o.w-42,23,9,1,'#F8DC9B'); R(c,o.x+o.w-41,29,7,1,'#B98E3E');
+  // machine à café
+  const k = L.counter;
+  R(c,k.x,k.y+4,k.w,6,'#B58463'); R(c,k.x,k.y+4,k.w,1,'#C99673'); R(c,k.x,k.y+10,k.w,14,'#7C5238'); R(c,k.x,k.y+23,k.w,1,'#5C3B28'); R(c,k.x+1,k.y+24,k.w,2,'#232B3A');
+  for(let x=k.x+3;x<k.x+k.w-6;x+=19){ R(c,x,k.y+13,16,9,'#8A5E42'); R(c,x+6,k.y+16,4,1,'#C9B79C'); }
+  const mx = k.x + 8, my = k.y + 4;
+  R(c,mx,my-17,16,19,'#2D3340'); R(c,mx,my-17,16,2,'#454E63'); R(c,mx+2,my-13,12,7,'#1B2029');
+  R(c,mx+3,my-12,10,5,'#2E7E6D'); R(c,mx+4,my-11,3,1,'#8FD9C4'); R(c,mx+8,my-11,2,1,'#8FD9C4');
+  R(c,mx+5,my-5,6,2,'#12161F'); R(c,mx+6,my-3,4,3,'#F4F4F4'); R(c,mx+6,my-3,4,1,'#6B3F2A');
+  R(c,k.x+30,my-6,4,6,'#EDEFF4'); R(c,k.x+30,my-6,4,1,'#6B3F2A'); R(c,k.x+36,my-6,4,6,'#EDEFF4'); R(c,k.x+36,my-6,4,1,'#6B3F2A');
+  R(c,k.x+k.w-18,my-17,11,19,'#9FC4E8'); R(c,k.x+k.w-18,my-17,11,3,'#6F93B8'); R(c,k.x+k.w-15,my-20,5,3,'#6F93B8'); R(c,k.x+k.w-17,my-12,2,9,'#C9E0F4');
+  plant(c, k.x + k.w + 2 > L.W - 16 ? k.x - 16 : k.x + k.w + 2, my - 6);
+  // banc d'attente : dossier au fond, assise dessinée devant les assis
+  {
+    const c0 = L.chairs[0], c1 = L.chairs[L.chairs.length-1];
+    const x0 = c0.x - 13, w = c1.x - c0.x + 26, y = c0.y;
+    R(c,x0,y-19,w,11,'#1E2430'); R(c,x0,y-19,w,1,'#3A465C');
+    for(let i=1;i<L.chairs.length;i++) R(c,x0+i*(w/L.chairs.length)|0,y-18,1,10,'#161B26');
+  }
+  // plante près de la porte
+  if(L.wide) plant(c, 156, 214);
+  // porte
+  const d = L.door;
+  R(c,0,d.wallY,L.W,L.H-d.wallY,P.mur); R(c,0,d.wallY,L.W,1,'#4A5772');
+  R(c,d.x-12,d.wallY,24,L.H-d.wallY,'#10141C'); R(c,d.x-13,d.wallY-1,1,L.H-d.wallY+1,'#2F3A4E'); R(c,d.x+12,d.wallY-1,1,L.H-d.wallY+1,'#2F3A4E');
+  R(c,d.x-11,d.wallY-6,22,5,'#5A4636'); R(c,d.x-11,d.wallY-6,22,1,'#6E5744'); for(let x=d.x-9;x<d.x+10;x+=4) R(c,x,d.wallY-4,2,1,'#463628');
+  return c0;
+}
+function plant(c,x,y){
+  R(c,x+1,y+9,10,2,'#9A6B4B'); R(c,x+2,y+11,8,6,'#8A5A3B'); R(c,x+2,y+16,8,1,'#6B4A32');
+  R(c,x+4,y,4,10,'#5E9A6A'); R(c,x+1,y+3,4,5,'#7FB77E'); R(c,x+7,y+2,5,6,'#7FB77E'); R(c,x+5,y-2,2,3,'#7FB77E'); R(c,x+2,y+5,2,2,'#5E9A6A');
+}
+function renderGlass(){
+  const c0 = document.createElement('canvas'); c0.width = L.W; c0.height = L.H;
+  const c = c0.getContext('2d');
+  const o = L.office;
+  c.fillStyle = 'rgba(175,196,227,0.10)'; c.fillRect(o.x+2, 40, o.w-4, 17);
+  R(c,o.x,26,2,o.h-22+0,'#A9BBD6'); R(c,o.x+o.w-2,26,2,o.h-22,'#A9BBD6');
+  R(c,o.x,40,o.w,1,'#8FA3C0');
+  const gap0 = o.x + o.w - 34, gap1 = o.x + o.w - 12;
+  R(c,o.x,o.y+o.h-2,gap0-o.x,2,'#A9BBD6'); R(c,gap1,o.y+o.h-2,o.x+o.w-gap1,2,'#A9BBD6');
+  R(c,gap0,o.y+o.h-2,1,2,'#6F82A0'); R(c,gap1-1,o.y+o.h-2,1,2,'#6F82A0');
+  for(let x=o.x+48;x<o.x+o.w-4;x+=48){ if(x>gap0-2 && x<gap1+2) continue; R(c,x,40,1,17,'#7F93B1'); }
+  c.fillStyle = 'rgba(255,255,255,0.20)';
+  for(let i=0;i<9;i++){ c.fillRect(o.x+10+i, 55-i, 2, 1); c.fillRect(o.x+26+i, 55-i, 1, 1); }
+  return c0;
+}
+
+/* ------------------------------------------------------------ dessin dynamique */
+const GLY = {
+  '?':['01110','10001','00001','00010','00100','00000','00100'],
+  '!':['00100','00100','00100','00100','00100','00000','00100'],
+  '.':['00000','00000','00000','00000','00000','10101','00000']
+};
+function bubble(c, bx, by, kind){
+  const cfg = {waiting:['#F0C36A','#3B2A06','?'], error:['#E0645A','#FFFFFF','!'], queued:['#8794AD','#161B26','.']}[kind];
+  if(!cfg) return;
+  const bob = REDUCE.matches ? 0 : (Math.floor(T*2.5) % 2);
+  const x = Math.round(bx), y = Math.round(by) - bob;
+  R(c,x+1,y,11,11,OUT); R(c,x,y+1,13,9,OUT);
+  R(c,x+1,y+1,11,9,cfg[0]);
+  R(c,x+2,y+11,3,1,OUT); R(c,x+3,y+11,1,1,cfg[0]); R(c,x+2,y+12,1,1,OUT); R(c,x+3,y+10,1,1,cfg[0]);
+  const gl = GLY[cfg[2]];
+  for(let j=0;j<7;j++) for(let i=0;i<5;i++) if(gl[j][i] === '1') R(c,x+4+i,y+2+j,1,1,cfg[1]);
+}
+function lineHash(n){ let x = (n*2654435761) >>> 0; x ^= x >>> 13; x = (x*1274126177) >>> 0; return (x ^ (x >>> 16)) >>> 0; }
+function drawScreen(c, x, y, state, seed){
+  // zone interne 12 x 9
+  if(state === 'running'){
+    R(c,x,y,12,9,P.ecran);
+    const sc = REDUCE.matches ? 0 : Math.floor(T*6 + seed);
+    for(let r=0;r<9;r++){
+      const li = r + sc;
+      if(li % 2 === 0){
+        const h = lineHash(Math.floor(li/2) + seed*7);
+        const len = 3 + (h % 7), ind = (h >> 4) % 3 === 0 ? 2 : 0;
+        R(c,x+1+ind,y+r,Math.min(len,10-ind),1,'#2E7E6D');
+      }
+    }
+  } else if(state === 'waiting'){
+    R(c,x,y,12,9,'#5E9A8C'); R(c,x+2,y+2,8,5,P.lampe); R(c,x+3,y+3,4,1,'#3B2A06'); R(c,x+3,y+5,2,1,'#3B2A06');
+    if(REDUCE.matches || Math.floor(T*2)%2) R(c,x+6,y+5,2,1,'#3B2A06');
+  } else if(state === 'error'){
+    R(c,x,y,12,9,P.err);
+    for(let i=0;i<5;i++){ R(c,x+3+i,y+2+i,1,1,'#FFFFFF'); R(c,x+7-i,y+2+i,1,1,'#FFFFFF'); }
+  } else if(state === 'idle'){
+    R(c,x,y,12,9,'#3F5F59'); R(c,x+(REDUCE.matches?5:Math.floor(T*2)%9),y+4,2,1,'#8FD9C4');
+  } else {
+    R(c,x,y,12,9,'#1C2330'); R(c,x+1,y+1,3,1,'#2B3445');
+  }
+}
+function pileCount(svc){ let n = 0; for(const a of A) if(a.role === 'agent' && a.svc === svc && a.delivered && !a.leaving && !a.stopped) n++; return n; }
+
+function drawUnit(c, u, kind, e, owner){
+  const cx = u.cx, cy = u.cy;
+  const a = e ? e.a : null;
+  const seatedHere = e && e.at === 'seat' && !e.moving;
+  R(c,cx+8,cy+8,18,10,'#1E2430'); R(c,cx+8,cy+8,18,1,'#3A465C');
+  if(seatedHere){
+    const pose = poseOf(e);
+    let dx = 0;
+    if(pose[0] === 's_err' && !REDUCE.matches) dx = Math.floor(T*9) % 2 ? 1 : -1;
+    const sp = sprite({role:a.role, ...a.look, pose:pose[0], f:pose[1], gray:a.state==='done' && a.delivered});
+    c.drawImage(sp, cx+9-1+dx, cy-1);
+  }
+  // ombre au sol puis bureau
+  R(c,cx+1,cy+29,UW,2,'#222A39');
+  R(c,cx,cy+17,UW,1,'#B58463'); R(c,cx,cy+18,UW,4,P.bois); R(c,cx,cy+22,UW,7,'#7C5238'); R(c,cx,cy+28,UW,1,'#5C3B28');
+  R(c,cx+4,cy+23,14,4,'#8A5E42'); R(c,cx+10,cy+24,2,1,'#C9B79C'); R(c,cx+22,cy+23,14,4,'#8A5E42'); R(c,cx+28,cy+24,2,1,'#C9B79C');
+  // clavier
+  R(c,cx+13,cy+19,9,2,'#C7CEDB'); R(c,cx+14,cy+19,7,1,'#9AA4BA');
+  // écran
+  R(c,cx+31,cy+14,4,3,'#2D3340');
+  R(c,cx+25,cy+2,14,12,'#232A36'); R(c,cx+25,cy+2,14,1,'#3A4457');
+  const scr = seatedHere && a.state !== 'queued' ? a.state : 'off';
+  drawScreen(c, cx+26, cy+3, scr, a ? a.id : 0);
+  R(c,cx+25,cy+12,14,2,'#232A36');
+  // objets selon le rôle
+  if(kind === 'mgr'){
+    const sv = owner ? owner.svc : 0;
+    const n = pileCount(sv);
+    const pop = folderPop[sv] > performance.now() ? 2 : 0;
+    const cols = ['#E3D3A8','#D8C390','#CBB57F'];
+    const m = Math.min(n,6);
+    for(let i=0;i<m;i++){
+      const top = (i === m-1) ? pop : 0;
+      R(c,cx+1+(i%2),cy+19-i*2-top,7,2,cols[i%3]); R(c,cx+1+(i%2),cy+18-i*2-top,3,1,'#C9B98C');
+    }
+    // porte-documents au sol
+    R(c,cx-5,cy+22,8,7,'#6B4A32'); R(c,cx-5,cy+22,8,1,'#7C5A40'); R(c,cx-3,cy+20,4,2,'#3F2B1D'); R(c,cx-3,cy+25,2,1,'#C9B79C'); R(c,cx-5,cy+28,8,1,'#563A27');
+  } else if(kind === 'chief'){
+    R(c,cx+1,cy+17,7,1,'#E8ECF2'); R(c,cx+2,cy+15,5,2,'#E8ECF2'); R(c,cx+3,cy+14,3,1,'#C9D1E0');
+    R(c,cx+16,cy+21,8,1,'#C9B79C');
+  } else {
+    R(c,cx+2,cy+19,6,2,'#DDE3EE'); R(c,cx+3,cy+18,5,1,'#C9D1E0');
+  }
+}
+function poseOf(e){
+  const a = e.a;
+  const t = REDUCE.matches ? 0 : T;
+  const f2 = Math.floor(t*5 + e.id) % 2;
+  if(e.moving) return ['w', Math.floor(t*7 + e.id) % 4];
+  if(e.at === 'seat'){
+    if(a.state === 'running') return ['s_type', f2];
+    if(a.state === 'waiting') return ['s_wait', Math.floor(t*2.5 + e.id) % 2];
+    if(a.state === 'error') return ['s_err', 0];
+    return ['s_done', 0];
+  }
+  if(e.at === 'coffee') return ['cup', Math.floor(t*0.9 + e.id) % 4];
+  if(e.at === 'chair') return ['s_q', Math.floor(t*1.3 + e.id) % 2];
+  return ['w', 0];
+}
+function drawWalker(c, e){
+  const a = e.a;
+  const pose = poseOf(e);
+  const carry = (a.delivering ? 'folder' : (a.role === 'mgr' && (e.moving || e.at==='coffee') ? 'case' : null));
+  const sp = sprite({role:a.role, ...a.look, pose:pose[0], f:pose[1], gray:a.state==='done' && a.delivered, carry: pose[0]==='s_q' ? null : carry});
+  const bob = (pose[0] === 'w' && (pose[1] === 1 || pose[1] === 3)) ? -1 : 0;
+  const x = Math.round(e.x), y = Math.round(e.y);
+  R(c,x-6,y-1,12,2,'#1E2533');
+  c.drawImage(sp, x-8-1, y-24-1+bob);
+}
+function drawBrackets(c, x, y, w, h, col, grow){
+  const g = grow, L4 = 5;
+  const xs = [x-g, x+w+g-1], ys = [y-g, y+h+g-1];
+  for(const px of xs) for(const py of ys){
+    const sx = px === xs[0] ? 1 : -1, sy = py === ys[0] ? 1 : -1;
+    R(c, sx>0 ? px : px-L4+1, py, L4, 1, col);
+    R(c, px, sy>0 ? py : py-L4+1, 1, L4, col);
+  }
+}
+function drawBoard(c){
+  const b = L.board;
+  R(c,b.x,b.y,b.w,b.h,'#C9D1E0'); R(c,b.x+1,b.y+1,b.w-2,b.h-2,P.texte);
+  R(c,b.x,b.y+b.h,b.w,1,'#232B3A');
+  R(c,b.x+4,b.y+4,18,1,'#AAB5C8'); R(c,b.x+4,b.y+7,12,1,'#AAB5C8');
+  R(c,b.x+b.w-18,b.y+3,6,6,P.lampe); R(c,b.x+b.w-10,b.y+4,6,6,P.ecran); R(c,b.x+b.w-18,b.y+6,0,0,'#000');
+  const ag = A.filter(a => a.role === 'agent' && !a.leaving);
+  const done = ag.filter(a => a.state === 'done').length;
+  R(c,b.x+4,b.y+13,b.w-8,3,'#B8C1D3');
+  if(ag.length) R(c,b.x+4,b.y+13,Math.round((b.w-8)*done/ag.length),3,'#2E9C84');
+}
+function unitList(){
+  const list = [];
+  list.push({u:L.chief, kind:'chief', depth:L.chief.cy+30, owner:A.find(a => a.role === 'chef')});
+  L.isl.forEach((isl,i) => {
+    list.push({u:isl.mgr, kind:'mgr', depth:isl.mgr.cy+30, owner:A.find(a => a.role === 'mgr' && a.svc === i)});
+    isl.slots.forEach((s,k) => list.push({u:s, kind:'agt', depth:s.cy+30, owner:A.find(a => a.role === 'agent' && a.svc === i && a.slot === k && !a.leaving)}));
+  });
+  return list;
+}
+function render(){
+  ctx.drawImage(bgC,0,0);
+  drawBoard(ctx);
+  // vapeur du café
+  if(!REDUCE.matches){
+    const k = L.counter, sx = k.x+12, sy = k.y-20;
+    const f = Math.floor(T*2)%2;
+    R(ctx,sx+f,sy,1,1,'#CFD6E6'); R(ctx,sx+1-f,sy-2,1,1,'#B8C1D3');
+  }
+  const items = [];
+  for(const it of unitList()){
+    const e = it.owner ? E.get(it.owner.id) : null;
+    items.push({depth:it.depth, draw:() => drawUnit(ctx, it.u, it.kind, e, it.owner)});
+  }
+  for(const e of E.values()){
+    if(!(e.at === 'seat' && !e.moving)) items.push({depth:e.y, draw:() => drawWalker(ctx, e)});
+  }
+  items.push({depth:L.chairs[0].y, draw:() => drawBenchFront(ctx)});
+  items.sort((p,q) => p.depth - q.depth);
+  for(const it of items) it.draw();
+  ctx.drawImage(fgC,0,0);
+  for(const e of E.values()) drawBubbleFor(ctx, e);
+  // filtre « qui m'attend »
+  if(filtreAttente){
+    ctx.fillStyle = 'rgba(22,28,40,0.62)'; ctx.fillRect(0,0,L.W,L.H);
+    const re = [];
+    for(const it of unitList()){
+      const e = it.owner ? E.get(it.owner.id) : null;
+      if(e && e.a.state === 'waiting' && e.at === 'seat' && !e.moving) re.push({depth:it.depth, draw:() => drawUnit(ctx, it.u, it.kind, e, it.owner)});
+    }
+    for(const e of E.values()) if(e.a.state === 'waiting' && !(e.at === 'seat' && !e.moving)) re.push({depth:e.y, draw:() => drawWalker(ctx, e)});
+    re.sort((p,q) => p.depth - q.depth); for(const it of re) it.draw();
+    for(const e of E.values()) if(e.a.state === 'waiting') drawBubbleFor(ctx, e);
+    for(const e of E.values()) if(e.a.state === 'waiting'){
+      const r = rectOf(e); drawBrackets(ctx, r.x, r.y, r.w, r.h, P.lampe, REDUCE.matches ? 2 : (Math.floor(T*2)%2 ? 3 : 2));
+    }
+  }
+  if(sel != null && E.get(sel)){
+    const r = rectOf(E.get(sel)); drawBrackets(ctx, r.x, r.y, r.w, r.h, P.texte, 1);
+  }
+}
+function drawBenchFront(c){
+  const c0 = L.chairs[0], c1 = L.chairs[L.chairs.length-1];
+  const x0 = c0.x - 13, w = c1.x - c0.x + 26, y = c0.y;
+  R(c,x0-1,y-9,w+2,9,'#3A465C'); R(c,x0-1,y-9,w+2,1,'#52617C'); R(c,x0-1,y-1,w+2,1,'#2A3446');
+  for(let i=1;i<L.chairs.length;i++) R(c,x0+(i*(w/L.chairs.length)|0),y-8,1,7,'#2E3A50');
+  R(c,x0+1,y,3,3,'#161B26'); R(c,x0+w-4,y,3,3,'#161B26');
+}
+function drawBubbleFor(c, e){
+  const a = e.a;
+  if(a.state !== 'waiting' && a.state !== 'error' && a.state !== 'queued') return;
+  if(e.at === 'seat' && !e.moving){ const s = seatOf(a); bubble(c, s.cx+22, s.cy-13, a.state); }
+  else if(e.at === 'chair' && !e.moving && a.state === 'queued'){ bubble(c, e.x-6, e.y-39, a.state); }
+  else if(a.state !== 'queued') bubble(c, e.x-6, e.y-40, a.state);
+}
+function rectOf(e){
+  if(e.at === 'seat' && !e.moving){ const s = seatOf(e.a); return {x:s.cx, y:s.cy-1, w:UW, h:UH}; }
+  return {x:Math.round(e.x)-8, y:Math.round(e.y)-25, w:16, h:27};
+}
+function tagPos(e){
+  if(e.at === 'seat' && !e.moving){ const s = seatOf(e.a); return {x:s.cx-4, y:s.cy+29, w:UW+8}; }
+  return {x:e.x-24, y:e.y+2, w:48};
+}
+
+/* ------------------------------------------------------------ DOM de la scène */
+function makeDom(e){
+  const a = e.a;
+  const b = document.createElement('button');
+  b.className = 'who'; b.type = 'button'; b.dataset.id = a.id;
+  b.addEventListener('click', () => select(a.id));
+  const t = document.createElement('span');
+  t.className = 'tag'; t.textContent = a.nom;
+  stage.appendChild(b); stage.appendChild(t);
+  e.who = b; e.tag = t; e.last = '';
+}
+function labelOf(a){ return `${a.nom}, ${ROLE[a.role].toLowerCase()}, ${a.stopped ? 'arrêté' : ETAT[a.state].lib.toLowerCase()}`; }
+const ilotEls = SERVICES.map(s => { const d = document.createElement('div'); d.className = 'ilot'; d.textContent = s.nom; stage.appendChild(d); return d; });
+function syncDom(){
+  const px = (v) => Math.round(v*S);
+  L.isl.forEach((i,k) => { ilotEls[k].style.transform = `translate(${px(i.x+4)}px,${px(i.y+4)}px)`; });
+  for(const e of E.values()){
+    const r = rectOf(e), tp = tagPos(e), a = e.a;
+    const key = [px(r.x),px(r.y),px(r.w),px(r.h),px(tp.x),px(tp.y),px(tp.w),a.state,a.nom,a.stopped].join('|');
+    if(key === e.last) continue;
+    e.last = key;
+    e.who.style.transform = `translate(${px(r.x)}px,${px(r.y)}px)`;
+    e.who.style.width = px(r.w) + 'px'; e.who.style.height = px(r.h) + 'px';
+    e.who.setAttribute('aria-label', labelOf(a));
+    e.who.classList.toggle('attend', a.state === 'waiting');
+    e.tag.style.transform = `translate(${px(tp.x)}px,${px(tp.y)}px)`;
+    e.tag.style.width = px(tp.w) + 'px';
+    e.tag.textContent = a.nom; e.tag.title = a.nom;
+    e.tag.classList.toggle('attend', a.state === 'waiting');
+    e.tag.classList.toggle('fini', a.state === 'done');
+  }
+}
+
+/* ------------------------------------------------------------ mise à l'échelle */
+const box = $('#scene');
+function setLayout(mode){
+  L = makeLayout(mode);
+  bgC = renderBg(); fgC = renderGlass();
+  cv.width = L.W; cv.height = L.H; ctx.imageSmoothingEnabled = false;
+  for(const e of E.values()){
+    e.moving = false; e.path = [];
+    if(e.at === 'door' && e.y > L.H) { e.at = 'door'; }
+    const st = standOf(e, e.at);
+    e.x = st.x; e.y = st.y; e.dest = e.at; e.last = '';
+    if(e.a.leaving){ removeAgent(e.a); }
+  }
+}
+let fitPending = false;
+function fit(){
+  fitPending = false;
+  const cs = box.clientWidth - 16;
+  const mode = cs >= 640 ? 'wide' : 'narrow';
+  if(!L || L.mode !== mode) setLayout(mode);
+  const availH = box.clientHeight - 16;
+  let s;
+  if(mode === 'wide') s = Math.min(cs / L.W, availH / L.H);
+  else s = cs / L.W;
+  s = Math.floor(s*4)/4;
+  s = Math.max(s, 1.75);
+  S = s;
+  stage.style.width = Math.round(L.W*S) + 'px';
+  stage.style.height = Math.round(L.H*S) + 'px';
+  stage.style.setProperty('--tag', Math.max(10, Math.min(12.5, S*4.6)).toFixed(1) + 'px');
+  stage.style.setProperty('--ilot', Math.max(11, Math.min(13.5, S*5)).toFixed(1) + 'px');
+  for(const e of E.values()) e.last = '';
+}
+new ResizeObserver(() => { if(!fitPending){ fitPending = true; requestAnimationFrame(fit); } }).observe(box);
+
+/* ------------------------------------------------------------ interface */
+const el = {
+  fiche:$('#fiche'), vide:$('#pVide'), liste:$('#pListe'), detail:$('#pDetail'), plan:$('#pPlan'),
+  bAttente:$('#bAttente'), bSim:$('#bSimuler'), bNouvel:$('#bNouvel'), menu:$('#menuNouvel'), bPlan:$('#bPlan'),
+  toast:$('#toast'), annonce:$('#annonce'), compteur:$('#compteur')
+};
+const ICO_PLAY = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polygon points="6 3 20 12 6 21 6 3"/></svg>';
+const ICO_PAUSE = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="14" y="4" width="4" height="16" rx="1"/><rect x="6" y="4" width="4" height="16" rx="1"/></svg>';
+const sheetMode = () => !window.matchMedia('(min-width: 980px)').matches;
+
+let toastTimer = 0;
+function toast(msg){
+  el.toast.textContent = msg; el.toast.hidden = false;
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => { el.toast.hidden = true; }, 3200);
+}
+function fmtSince(ms){
+  const m = Math.floor(ms / MIN);
+  if(ms < 45000) return 'à l’instant';
+  if(m < 1) return 'moins d’une minute';
+  if(m < 60) return m + ' min';
+  return Math.floor(m/60) + ' h ' + String(m%60).padStart(2,'0');
+}
+function plur(n, un, plu){ return n + ' ' + (n > 1 ? plu : un); }
+
+function refreshCounter(){
+  const c = {running:0, waiting:0, done:0, error:0};
+  for(const a of A){ if(c[a.state] != null) c[a.state]++; }
+  const items = [
+    ['#8FD9C4', c.running, c.running > 1 ? 'en cours' : 'en cours'],
+    ['#F0C36A', c.waiting, c.waiting > 1 ? 'attendent' : 'attend'],
+    ['#59627A', c.done, c.done > 1 ? 'finis' : 'fini']
+  ];
+  if(c.error) items.push(['#E0645A', c.error, c.error > 1 ? 'en erreur' : 'en erreur']);
+  el.compteur.innerHTML = items.map(i => `<span><i style="background:${i[0]}"></i><b>${i[1]}</b> ${i[2]}</span>`).join('');
+}
+function renderPortrait(a){
+  const c = $('#portrait').getContext('2d');
+  c.imageSmoothingEnabled = false;
+  c.clearRect(0,0,72,68);
+  c.fillStyle = '#2B3445'; c.fillRect(0,0,72,68);
+  const pose = a.state === 'running' ? 's_type' : a.state === 'waiting' ? 's_wait' : a.state === 'error' ? 's_err' : 's_done';
+  const sp = sprite({role:a.role, ...a.look, pose, f:0, gray:a.state==='done' && a.delivered});
+  c.drawImage(sp, 0, 0, 18, 17, 0, 0, 72, 68);
+}
+function renderDetail(){
+  const a = A_BY_ID.get(sel); if(!a) return;
+  $('#dNom').textContent = a.nom;
+  $('#dRole').textContent = ROLE[a.role] + (a.role === 'agent' || a.role === 'mgr' ? ' ' + 'du service ' + SERVICES[a.svc].nom : '');
+  $('#dSup').textContent = a.sup;
+  $('#dModele').textContent = a.modele;
+  const et = a.stopped ? {lib:'Arrêté', col:'#59627A'} : ETAT[a.state];
+  $('#dEtat').textContent = et.lib; $('#dPastille').style.background = et.col;
+  $('#dDepuis').textContent = fmtSince(performance.now() - a.since);
+  $('#dConsigne').textContent = a.consigne;
+  $('#dFichiers').innerHTML = a.fichiers.map(f => `<li>${f}</li>`).join('');
+  const q = $('#dQuestion');
+  q.hidden = a.state !== 'waiting';
+  if(a.state === 'waiting') $('#dQuestionTexte').textContent = a.q;
+  $('#bRep').hidden = a.state !== 'waiting';
+  $('#bStop').hidden = !(a.role === 'agent' && a.state !== 'done');
+  if(a.state !== 'waiting') $('#reponse').hidden = true;
+  renderPortrait(a);
+}
+function renderList(){
+  const w = A.filter(a => a.state === 'waiting');
+  const box2 = $('#listeAttente');
+  if(!w.length){ box2.innerHTML = '<p style="color:var(--doux)">Personne ne t’attend pour le moment.</p>'; return; }
+  box2.innerHTML = '';
+  for(const a of w){
+    const b = document.createElement('button');
+    b.className = 'ligne-liste'; b.type = 'button';
+    b.innerHTML = `<b>${a.nom}</b><span>${a.q}</span><small>${fmtSince(performance.now() - a.since)}</small>`;
+    b.addEventListener('click', () => select(a.id));
+    box2.appendChild(b);
+  }
+}
+const LOT = {'Module comptes':'Comptes clients', 'Worker Stripe':'Webhook de facturation', 'Migration SQL':'Clients et organisations',
+  'Maquettes accueil':'Page d’accueil', 'Pied de page':'Pied de page', 'Tests portail':'Tests du portail', 'Relecture sécurité':'Sécurité du portail',
+  'Webhook paiements':'E-mail de facture payée'};
+const PLAN_LOTS = () => {
+  const rows = A.filter(a => a.role === 'agent' && !a.leaving).map(a => ({lot:LOT[a.nom] || a.nom, qui:a.nom, modele:a.modele, etat:a.stopped ? 'Arrêté' : ETAT[a.state].lib, pending:false}));
+  if(!planValide) rows.push({lot:LOT['Webhook paiements'], qui:'Webhook paiements', modele:'Sonnet 5.5', etat:'À valider', pending:true});
+  return rows;
+};
+function renderPlan(){
+  $('#planCorps').innerHTML = PLAN_LOTS().map(r => `<tr class="${r.pending ? 'a-valider' : ''}"><td>${r.lot}<span class="sup">${r.qui}</span></td><td>${r.modele}</td><td>${r.etat}</td></tr>`).join('');
+  $('#bValider').disabled = planValide;
+  $('#bValider').textContent = planValide ? 'Plan validé' : 'Valider le plan';
+  $('#planNote').textContent = planValide ? 'Le chef de projet a lancé le dernier lot.' : 'Le chef de projet attend ta validation avant de lancer le dernier lot.';
+}
+function showPanel(){
+  const mode = sel != null ? 'detail' : planOuvert ? 'plan' : (filtreAttente && !listeFermee) ? 'liste' : 'vide';
+  el.vide.hidden = mode !== 'vide'; el.liste.hidden = mode !== 'liste'; el.detail.hidden = mode !== 'detail'; el.plan.hidden = mode !== 'plan';
+  if(mode === 'detail') renderDetail();
+  if(mode === 'liste') renderList();
+  if(mode === 'plan') renderPlan();
+  const open = mode !== 'vide';
+  el.fiche.dataset.ouverte = open ? 'true' : 'false';
+  el.fiche.inert = sheetMode() && !open;
+  $('#principal').classList.toggle('sheet-ouverte', open && sheetMode());
+}
+function refreshUI(){
+  refreshCounter(); showPanel();
+  stage.classList.toggle('filtre', filtreAttente);
+  for(const e of E.values()) e.last = '';
+}
+function select(id){
+  sel = id; planOuvert = false; el.bPlan.setAttribute('aria-pressed','false');
+  $('#reponse').hidden = true; $('#bStop').textContent = 'Arrêter';
+  refreshUI();
+  const e = E.get(id);
+  if(e && sheetMode()){
+    requestAnimationFrame(() => {
+      const r = rectOf(e);
+      const top = stage.offsetTop + r.y*S - 56;
+      box.scrollTo({top:Math.max(0, top), behavior: REDUCE.matches ? 'auto' : 'smooth'});
+      const left = stage.offsetLeft + r.x*S - box.clientWidth/2 + r.w*S/2;
+      if(box.scrollWidth > box.clientWidth) box.scrollLeft = Math.max(0, left);
+    });
+  }
+}
+function closePanel(){
+  if(sel != null){ sel = null; }
+  else if(planOuvert){ planOuvert = false; el.bPlan.setAttribute('aria-pressed','false'); }
+  else if(filtreAttente){ listeFermee = true; }
+  refreshUI();
+}
+document.querySelectorAll('[data-fermer]').forEach(b => b.addEventListener('click', closePanel));
+
+el.bAttente.addEventListener('click', () => {
+  filtreAttente = !filtreAttente; listeFermee = false;
+  el.bAttente.setAttribute('aria-pressed', String(filtreAttente));
+  if(filtreAttente){ planOuvert = false; el.bPlan.setAttribute('aria-pressed','false'); }
+  refreshUI();
+});
+el.bPlan.addEventListener('click', () => {
+  planOuvert = !planOuvert; if(planOuvert) sel = null;
+  el.bPlan.setAttribute('aria-pressed', String(planOuvert));
+  refreshUI();
+});
+$('#bValider').addEventListener('click', () => {
+  if(planValide) return;
+  planValide = true;
+  const r = spawnAgent(0, {queued:true, pool:0});
+  toast(r ? 'Plan validé : le chef lance « ' + r.nom + ' » dans Backend.' : 'Plan validé : Backend est complet, le lot attend une place.');
+  renderPlan();
+});
+function setSim(on){
+  simOn = on;
+  el.bSim.setAttribute('aria-pressed', String(on));
+  el.bSim.title = on ? 'Mettre la simulation en pause' : 'Relancer la simulation';
+  $('#icoSim').innerHTML = on ? ICO_PAUSE : ICO_PLAY;
+  nextAt = performance.now() + 1500;
+}
+el.bSim.addEventListener('click', () => setSim(!simOn));
+
+function freeSlots(k){
+  const used = new Set(A.filter(a => a.role === 'agent' && a.svc === k && !a.leaving).map(a => a.slot));
+  return [0,1,2,3].filter(s => !used.has(s));
+}
+function buildMenu(){
+  el.menu.innerHTML = '<p>Dans quel service ?</p>';
+  SERVICES.forEach((s,k) => {
+    const free = freeSlots(k).length;
+    const recup = A.some(a => a.role === 'agent' && a.svc === k && a.delivered && !a.leaving);
+    const b = document.createElement('button');
+    b.type = 'button';
+    const note = free ? plur(free, 'place libre', 'places libres') : (recup ? 'Complet, remplace un agent fini' : 'Complet');
+    b.innerHTML = `<span>${s.nom}</span><small>${note}</small>`;
+    if(!free && !recup) b.disabled = true;
+    b.addEventListener('click', () => { closeMenu(); const a = spawnAgent(k, {queued:false}); if(a){ select(a.id); toast('Nouvel agent dans ' + s.nom + ' : ' + a.nom); } });
+    el.menu.appendChild(b);
+  });
+}
+function openMenu(){ buildMenu(); el.menu.hidden = false; el.bNouvel.setAttribute('aria-expanded','true'); const f = el.menu.querySelector('button:not([disabled])'); if(f) f.focus(); }
+function closeMenu(){ el.menu.hidden = true; el.bNouvel.setAttribute('aria-expanded','false'); }
+el.bNouvel.addEventListener('click', () => { el.menu.hidden ? openMenu() : closeMenu(); });
+document.addEventListener('click', (ev) => { if(!el.menu.hidden && !ev.target.closest('.nouvel')) closeMenu(); });
+document.addEventListener('keydown', (ev) => {
+  if(ev.key === 'Escape'){
+    if(!el.menu.hidden){ closeMenu(); el.bNouvel.focus(); return; }
+    if(sel != null || planOuvert || (filtreAttente && !listeFermee && sheetMode())) closePanel();
+  }
+});
+
+$('#bConv').addEventListener('click', () => { const a = A_BY_ID.get(sel); if(a) toast('Conversation de ' + a.nom + ' ouverte dans Boite.'); });
+$('#bRep').addEventListener('click', () => {
+  const a = A_BY_ID.get(sel); if(!a) return;
+  const f = $('#reponse'); f.hidden = !f.hidden;
+  const perm = /^Autoriser/.test(a.q || '');
+  $('#repPerm').hidden = !perm; $('#repTexte').hidden = perm;
+  if(!f.hidden) (perm ? f.querySelector('[data-rep=oui]') : $('#repChamp')).focus();
+});
+function answer(text){
+  const a = A_BY_ID.get(sel); if(!a) return;
+  setState(a, 'running');
+  $('#reponse').hidden = true; $('#repChamp').value = '';
+  toast(text + ' ' + a.nom + ' reprend.');
+  refreshUI();
+}
+document.querySelectorAll('[data-rep]').forEach(b => b.addEventListener('click', () => answer(b.dataset.rep === 'oui' ? 'Autorisé :' : 'Refusé :')));
+$('#reponse').addEventListener('submit', (ev) => { ev.preventDefault(); answer('Réponse envoyée :'); });
+let stopTimer = 0;
+$('#bStop').addEventListener('click', () => {
+  const a = A_BY_ID.get(sel); if(!a) return;
+  const b = $('#bStop');
+  if(b.textContent === 'Arrêter'){
+    b.textContent = 'Confirmer l’arrêt';
+    clearTimeout(stopTimer); stopTimer = setTimeout(() => { b.textContent = 'Arrêter'; }, 3500);
+    return;
+  }
+  clearTimeout(stopTimer); b.textContent = 'Arrêter';
+  a.stopped = true; a.q = null; a.state = 'done'; a.delivering = false; a.delivered = true; a.since = performance.now();
+  toast(a.nom + ' est arrêté.');
+  refreshUI();
+});
+
+/* ------------------------------------------------------------ simulation */
+let nextAt = performance.now() + 2800;
+function setState(a, s){
+  const prev = a.state;
+  a.state = s; a.since = performance.now();
+  if(s === 'waiting'){
+    a.q = a.role === 'chef' ? 'Valider le découpage en lots ?' : QUESTIONS[Math.floor(Math.random()*QUESTIONS.length)];
+    el.annonce.textContent = a.nom + ' attend l’utilisateur : ' + a.q;
+  } else a.q = null;
+  if(s === 'done'){ a.delivered = false; a.delivering = a.role === 'agent'; if(!a.delivering) a.delivered = true; }
+  if(prev === 'done' && s !== 'done'){ a.delivered = false; a.delivering = false; }
+  if(s === 'running' && prev === 'queued'){ /* part vers son bureau */ }
+}
+function spawnAgent(k, opt){
+  opt = opt || {};
+  let slots = freeSlots(k);
+  if(!slots.length){
+    const old = A.filter(a => a.role === 'agent' && a.svc === k && a.delivered && !a.leaving).sort((p,q) => p.since - q.since)[0];
+    if(!old){ toast(SERVICES[k].nom + ' est complet : 4 agents sur 4.'); return null; }
+    old.leaving = true; old.slot = -1;
+    slots = freeSlots(k);
+  }
+  const names = new Set(A.map(a => a.nom));
+  const pool = POOLS[k].filter(p => !names.has(p.nom));
+  const def = (pool.length ? pool : POOLS[k])[Math.floor(Math.random()*(pool.length || POOLS[k].length))];
+  const mg = A.find(a => a.role === 'mgr' && a.svc === k);
+  const a = mk({nom:pool.length ? def.nom : def.nom + ' bis', role:'agent', svc:k, slot:slots[0], sup:mg.nom, modele:MODELES[Math.floor(Math.random()*MODELES.length)],
+    since:performance.now(), state:opt.queued ? 'queued' : 'running',
+    look:{skin:Math.floor(Math.random()*4), hair:Math.floor(Math.random()*6), style:Math.floor(Math.random()*3), shirt:Math.floor(Math.random()*5)},
+    consigne:def.c, fichiers:def.f});
+  if(opt.pool === 0 && !names.has('Webhook paiements')){ a.nom = 'Webhook paiements'; a.consigne = 'Envoie un e-mail à chaque facture payée.'; a.fichiers = ['backend/src/billing/mail.rs']; }
+  A.push(a); A_BY_ID.set(a.id, a);
+  const e = newEnt(a, 'seat', true); makeDom(e);
+  refreshUI();
+  return a;
+}
+function simStep(){
+  const ags = A.filter(a => !a.leaving && !a.stopped);
+  const waiting = ags.filter(a => a.state === 'waiting').length;
+  const cand = [];
+  for(const a of ags){
+    const dwell = (performance.now() - a.since) / 1000;
+    const e = E.get(a.id);
+    if(e && (e.moving || a.delivering)) continue;
+    if(a.state === 'queued') cand.push([a,'running',3]);
+    else if(a.state === 'running'){
+      if(a.role === 'agent'){
+        cand.push([a,'done', dwell > 8 ? 2.4 : 0.3]); cand.push([a,'waiting', 1.4]); cand.push([a,'error', 0.35]); cand.push([a,'idle', 0.6]);
+      } else if(a.role === 'mgr') cand.push([a,'idle', 0.5]);
+      else cand.push([a,'waiting', 0.15]);
+    }
+    else if(a.state === 'waiting'){ if(dwell > 14 && waiting > 1) cand.push([a,'running', 1.5]); }
+    else if(a.state === 'idle'){ if(dwell > 6) cand.push([a,'running', 2.2]); }
+    else if(a.state === 'error'){ if(dwell > 9) cand.push([a,'running', 1.5]); }
+  }
+  const active = ags.filter(a => a.role === 'agent' && a.state !== 'done').length;
+  const queuedN = ags.filter(a => a.state === 'queued').length;
+  const spawnable = planValide || true;
+  if(spawnable && active < 6 && queuedN < 3){
+    const ks = [0,1,2].filter(k => freeSlots(k).length || A.some(a => a.role === 'agent' && a.svc === k && a.delivered && !a.leaving));
+    if(ks.length) cand.push(['spawn', ks[Math.floor(Math.random()*ks.length)], 1.6]);
+  }
+  const total = cand.reduce((s,c) => s + c[2], 0);
+  if(!total) return;
+  let r = Math.random() * total, pick = cand[0];
+  for(const c of cand){ r -= c[2]; if(r <= 0){ pick = c; break; } }
+  if(pick[0] === 'spawn'){ const n = spawnAgent(pick[1], {queued:true}); if(n) el.annonce.textContent = n.nom + ' entre dans le bureau.'; }
+  else setState(pick[0], pick[1]);
+  refreshUI();
+}
+function simTick(ts){
+  if(!simOn || ts < nextAt) return;
+  nextAt = ts + 3000 + Math.random()*2000;
+  simStep();
+}
+
+/* ------------------------------------------------------------ boucle */
+let last = performance.now(), sinceTick = 0;
+function frame(ts){
+  const dt = Math.min(0.1, (ts - last)/1000); last = ts;
+  T = REDUCE.matches ? 0 : ts/1000;
+  simTick(ts);
+  for(const e of [...E.values()]) stepEnt(e, dt);
+  render(); syncDom();
+  sinceTick += dt;
+  if(sinceTick > 1){
+    sinceTick = 0;
+    if(sel != null && !el.detail.hidden) $('#dDepuis').textContent = fmtSince(performance.now() - A_BY_ID.get(sel).since);
+    const m = 42 + Math.floor((performance.now() - T0)/MIN);
+    $('#duree').textContent = 'Mission lancée il y a ' + m + ' min';
+  }
+  requestAnimationFrame(frame);
+}
+
+/* ------------------------------------------------------------ départ */
+setLayout('wide');
+for(const a of A){
+  const at = want({a});
+  const e = newEnt(a, at, false);
+  makeDom(e);
+}
+setSim(true);
+fit();
+refreshUI();
+requestAnimationFrame(frame);
+window.addEventListener('resize', () => { if(!fitPending){ fitPending = true; requestAnimationFrame(fit); } });
+})();
+</script>
+</body>
+</html>

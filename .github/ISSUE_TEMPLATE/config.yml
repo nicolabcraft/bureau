@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Faille de sécurité
+    url: https://github.com/nicolabcraft/bureau/security/advisories/new
+    about: À signaler en privé. Ne pas ouvrir d'issue publique.
+  - name: Wiki
+    url: https://github.com/nicolabcraft/bureau/wiki
+    about: Installation, premiers pas, la vue, les commandes, les skills et les réglages.
+  - name: Discussions
+    url: https://github.com/nicolabcraft/bureau/discussions
+    about: Idées, retours d'usage et échanges avec les autres utilisateurs.

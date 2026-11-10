@@ -1,0 +1,46 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  verifier:
+    name: Vérifications
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version-file: package.json
+      - run: bun install --frozen-lockfile
+      - name: Types (tsc)
+        run: bun run check
+      - name: Tests
+        run: bun test
+      - name: Manifeste
+        run: bun run check:manifest
+      - name: Wiki et README (liens, tirets, chemins personnels)
+        run: bun scripts/check-wiki.ts
+      - name: Pas de tiret cadratin ni demi-cadratin
+        # Les deux caractères sont écrits par leur code, pour que ce fichier n'en contienne aucun.
+        run: |
+          cadratin="$(printf '\xe2\x80\x94')"
+          demi="$(printf '\xe2\x80\x93')"
+          if git grep -n -I -e "$cadratin" -e "$demi" -- . ':(exclude)bun.lock'; then
+            echo "::error::Tiret cadratin ou demi-cadratin trouvé (lignes ci-dessus). Utiliser une virgule, deux-points, parenthèses ou un trait d'union."
+            exit 1
+          fi

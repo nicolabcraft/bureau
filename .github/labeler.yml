@@ -1,0 +1,21 @@
+vue:
+  - changed-files:
+      - any-glob-to-any-file: ['web/**']
+service:
+  - changed-files:
+      - any-glob-to-any-file: ['src/**']
+commandes:
+  - changed-files:
+      - any-glob-to-any-file: ['src/commands.ts', 'docs/commandes.md']
+skills:
+  - changed-files:
+      - any-glob-to-any-file: ['skills/**']
+documentation:
+  - changed-files:
+      - any-glob-to-any-file: ['docs/**', 'wiki/**', '*.md']
+ci:
+  - changed-files:
+      - any-glob-to-any-file: ['.github/**', 'scripts/**']
+dépendances:
+  - changed-files:
+      - any-glob-to-any-file: ['package.json', 'bun.lock']

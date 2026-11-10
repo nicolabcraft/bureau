@@ -1,0 +1,32 @@
+name: Poser une question
+description: Une question d'usage précise sur Bureau, après lecture du wiki.
+labels: [question, à trier]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Lisez d'abord le [wiki](https://github.com/nicolabcraft/bureau/wiki). Pour une idée ou un retour d'usage plutôt qu'une question, les [discussions](https://github.com/nicolabcraft/bureau/discussions) sont plus adaptées.
+  - type: textarea
+    id: question
+    attributes:
+      label: Votre question
+      description: Ce que vous voulez faire, ce que vous avez essayé et ce qui bloque.
+    validations:
+      required: true
+  - type: input
+    id: version-bureau
+    attributes:
+      label: Version de Bureau
+      placeholder: 0.1.0
+  - type: input
+    id: version-boite
+    attributes:
+      label: Version de Boite
+      placeholder: 2.0.0-beta.1
+  - type: checkboxes
+    id: verifications
+    attributes:
+      label: Avant d'envoyer
+      options:
+        - label: "J'ai lu le wiki et cherché dans les issues, la réponse n'y est pas."
+          required: true

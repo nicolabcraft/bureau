@@ -1,0 +1,5 @@
+node_modules/
+dist/
+bureau.js
+*.log
+.maquettes/

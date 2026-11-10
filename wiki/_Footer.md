@@ -1,0 +1,1 @@
+Bureau est un plugin de Boite, sous licence MIT. [Dépôt](https://github.com/nicolabcraft/bureau) · [Signaler un problème](https://github.com/nicolabcraft/bureau/issues/new/choose) · [Contribuer](https://github.com/nicolabcraft/bureau/blob/main/CONTRIBUTING.md)
