@@ -52,7 +52,7 @@ Bureau le compte « Fini » seulement après son rapport (`boite bureau-rapport`
 
 ### `bureau-archive` sort avec le code 1
 
-Normal aujourd'hui : Boite n'ouvre pas `threads.archive` aux plugins. Voir [Archivage automatique](Archivage-automatique). `--dry-run` donne la liste sans erreur.
+Boite a refusé au moins un fil : il est épinglé, ou Boite est antérieur à 2.0.0-nightly.20261111.1 et n'ouvre pas `threads.archive` aux plugins. Le motif est dans `boite bureau-archive journal`. `--dry-run` donne la liste sans erreur.
 
 ### « BOITE_PLUGIN_DATA est absent » ou « Boite est injoignable »
 

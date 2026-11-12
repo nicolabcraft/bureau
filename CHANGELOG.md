@@ -2,6 +2,10 @@
 
 Chaque version publiée sur GitHub reprend sa section de ce fichier, suivie du tuto d'installation complet.
 
+## 0.2.1
+
+- L'archivage automatique archive pour de vrai : Boite ouvre `threads.archive` aux plugins sous `threads.write` depuis 2.0.0-nightly.20261111.1. Avec un Boite plus ancien, chaque refus est noté au journal.
+
 ## 0.2.0
 
 ### La vue : l'immeuble vu de dessus

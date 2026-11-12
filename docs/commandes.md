@@ -80,7 +80,7 @@ Règles (`decideArchive`, pur) : archivé si au repos (`idle` ou `done`), non é
 
 `reglages.json` : `{ "version": 1, "archivage": { "auto": true, "delaiHeures": 6, "etendu": false, "delaiEtenduHeures": 48 } }`, relu à chaque passage. `archivage.jsonl` : une ligne JSON par tentative `{ at, threadId, title, reason, rule, mode, ok, error? }`. Le service fait un passage toutes les 10 minutes (si `auto`), l'état de la vue porte `archives` (dernières 24 h).
 
-Archivage officiel : `threads.archive` avec `onlyIfIdle`, jamais `threads.remove`. Fermé aux plugins dans Boite aujourd'hui (le core ne l'ouvre qu'à l'agent et au propriétaire) : `CORE_ARCHIVE_OPEN = false`, aucun appel n'est fait. Un refus de Boite est journalisé (`ok: false`) et le fil n'est pas retenté avant le redémarrage du service.
+Archivage officiel : `threads.archive` avec `onlyIfIdle`, jamais `threads.remove`. Ouvert aux plugins sous `threads.write` depuis Boite 2.0.0-nightly.20261111.1 (archivage seul, jamais un fil épinglé) : `CORE_ARCHIVE_OPEN = true`. Un refus de Boite est journalisé (`ok: false`) et le fil n'est pas retenté avant le redémarrage du service.
 
 ## Slash commands
 - `/bureau` : « Lance `boite bureau`, puis `boite browse` sur l'adresse affichée, sans autre commentaire. »

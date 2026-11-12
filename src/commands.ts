@@ -542,7 +542,7 @@ async function bureauArchive(args: string[], ctx: CommandContext): Promise<numbe
     for (const { decision, error } of result.failed) ctx.io.err(`Refusé par Boite : ${decision.threadId} | ${error}`);
   }
   if (result.unavailable) {
-    ctx.io.err('Rien n\'a été archivé : Boite n\'ouvre pas encore threads.archive aux plugins. Archive à la main avec `boite thread archive <id>`, ou relance avec --dry-run pour la liste seule.');
+    ctx.io.err('Rien n\'a été archivé : l\'archivage réel est coupé dans Bureau (CORE_ARCHIVE_OPEN). Archive à la main avec `boite thread archive <id>`, ou relance avec --dry-run pour la liste seule.');
     return 1;
   }
   return result.failed.length > 0 ? 1 : 0;
