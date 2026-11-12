@@ -63,8 +63,8 @@ describe('defaults', () => {
   test('6 h, option étendue coupée, 48 h pour l\'option étendue', () => {
     expect(DEFAULT_SETTINGS).toEqual({ auto: true, delayHours: 6, extended: false, extendedDelayHours: 48 });
   });
-  test('Boite does not open threads.archive to plugins yet, so the core archiver stays off', () => {
-    expect(CORE_ARCHIVE_OPEN).toBe(false);
+  test('Boite opens threads.archive to plugins, so the core archiver is on', () => {
+    expect(CORE_ARCHIVE_OPEN).toBe(true);
   });
 });
 
@@ -408,11 +408,20 @@ describe('service', () => {
     expect(service.snapshot().archives).toEqual([]);
   });
 
-  test('without an archiver (Boite closed to plugins) a real pass archives nothing', async () => {
-    const { service, dataDir } = await startWith(undefined);
+  test('without an archiver (switched off) a real pass archives nothing', async () => {
+    const { service, dataDir } = await startWith(null);
     const result = await service.archiveNow();
     expect(result).toMatchObject({ unavailable: true, archived: [] });
     expect(readJournal(dataDir)).toEqual([]);
+  });
+
+  test('by default the service archives through the core, idle threads only', async () => {
+    const { service, dataDir, fake } = await startWith(undefined);
+    fake.on('threads.archive', () => ({}));
+    const result = await service.archiveNow();
+    expect(result.archived.map((decision) => decision.threadId)).toEqual(['done1']);
+    expect(fake.calls.filter((call) => call.method === 'threads.archive').map((call) => call.params)).toEqual([{ threadId: 'done1', archived: true, onlyIfIdle: true }]);
+    expect(readJournal(dataDir)).toMatchObject([{ threadId: 'done1', ok: true }]);
   });
 
   test('the timer runs a pass by itself, unless auto is off', async () => {
@@ -462,14 +471,27 @@ describe('boite bureau-archive', () => {
     expect(data.kept.map((entry: Decision) => entry.keep).sort()).toEqual(['en-cours', 'equipe-active']);
   });
 
-  test('a real run says plainly that Boite offers no archiving to plugins, lists the threads, exits 1, archives nothing', async () => {
+  test('a real run archives through threads.archive, journals it and exits 0', async () => {
     const { dataDir, fake, run } = setup();
+    fake.on('threads.archive', () => ({}));
     const { code, out, err } = await run();
-    expect(code).toBe(1);
+    expect(code).toBe(0);
+    expect(err).toEqual([]);
     expect(out[0]).toBe('1 fil(s) à archiver.');
-    expect(err.join('\n')).toContain('Boite n\'ouvre pas encore threads.archive aux plugins');
-    expect(fake.calls.map((call) => call.method)).not.toContain('threads.archive');
-    expect(readJournal(dataDir)).toEqual([]);
+    expect(out).toContain('Archivé : done1 | Agent fini');
+    expect(fake.calls.filter((call) => call.method === 'threads.archive').map((call) => call.params)).toEqual([{ threadId: 'done1', archived: true, onlyIfIdle: true }]);
+    expect(readJournal(dataDir)).toMatchObject([{ threadId: 'done1', ok: true, mode: 'manuel' }]);
+  });
+
+  test('a real run on a Boite that refuses shows the refusal, journals it and exits 1', async () => {
+    const { dataDir, fake, run } = setup();
+    fake.on('threads.archive', () => {
+      throw new Error('pinned: thread done1 is pinned');
+    });
+    const { code, err } = await run();
+    expect(code).toBe(1);
+    expect(err.join('\n')).toContain('Refusé par Boite : done1 | ');
+    expect(readJournal(dataDir)).toMatchObject([{ threadId: 'done1', ok: false }]);
   });
 
   test('reglages shows the defaults, changes them, and refuses nonsense', async () => {

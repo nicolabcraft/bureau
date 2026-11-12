@@ -125,7 +125,7 @@ boite bureau-archive journal
 boite bureau-archive reglages --delai 6 --etendu oui --delai-etendu 48 --auto oui
 ```
 
-Tant que Boite n'ouvre pas `threads.archive` aux plugins, un passage réel n'archive rien : il liste les fils, le dit et sort avec le code 1.
+Un passage réel archive les fils listés. Si Boite en refuse un (fil épinglé, Boite antérieur à 2.0.0-nightly.20261111.1), le refus est affiché et noté au journal, et la commande sort avec le code 1.
 
 ## Commandes de composeur
 

@@ -2,6 +2,11 @@
 
 Chaque version publiée sur GitHub reprend sa section de ce fichier, suivie du tuto d'installation complet.
 
+## 0.1.1
+
+- L'archivage automatique archive pour de vrai : Boite ouvre `threads.archive` aux plugins sous `threads.write` depuis 2.0.0-nightly.20261111.1. Avec un Boite plus ancien, chaque refus est noté au journal.
+- L'exemple de plan du skill `bureau-chef` cite `claude/claude-opus-5-5` au lieu d'un identifiant de modèle périmé.
+
 ## 0.1.0
 
 Première version publique.

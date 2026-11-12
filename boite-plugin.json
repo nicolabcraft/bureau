@@ -2,15 +2,15 @@
   "schema": 2,
   "id": "bureau",
   "name": "Bureau",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Shows Boite's agents as little workers in an office, and gives them a chef, managers and agents so every delegated job has a frame.",
   "homepage": "https://github.com/nicolabcraft/bureau",
   "runtime": "bun",
   "executable": "bureau",
   "artifacts": {
     "any": {
-      "url": "https://github.com/nicolabcraft/bureau/releases/download/v0.1.0/bureau.js",
-      "sha256": "8ad219cd3b6c93cb7b690e65aeec80a4f61c99a0676592ba9355dbe7697264dd"
+      "url": "https://github.com/nicolabcraft/bureau/releases/download/v0.1.1/bureau.js",
+      "sha256": "661967367d5bbdcdfb11fcb77768a774cd4f4f88702ada301610bd982519d8e3"
     }
   },
   "permissions": [

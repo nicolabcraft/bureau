@@ -4,22 +4,11 @@ Ce qui existe est décrit dans les autres pages. Cette page ne liste que ce qui 
 
 ## Prévu : demandes à Boite
 
-Deux manques viennent de Boite lui-même, pas de Bureau. Bureau les contourne aujourd'hui.
+La permission `threads.archive` pour les plugins est arrivée dans Boite 2.0.0-nightly.20261111.1 : l'[archivage automatique](Archivage-automatique) archive pour de vrai depuis Bureau 0.1.1.
 
-### Permission `threads.archive` pour les plugins
+### Un onglet Bureau dans le panneau de Boite
 
-Aujourd'hui, Boite ne l'ouvre pas aux plugins (permissions possibles : `threads.read`, `threads.write`, `todos`, `ui.reveal`). Conséquence : l'[archivage automatique](Archivage-automatique) applique ses règles, tient son journal et son passage à blanc, mais n'archive rien.
-
-Quand Boite ouvrira la méthode :
-
-1. déclarer la permission dans `boite-plugin.json` ;
-2. passer `CORE_ARCHIVE_OPEN` à `true` dans `src/archive.ts`.
-
-### Un panneau de plugin dans Boite
-
-Boite ne propose pas de point d'extension pour dessiner dans sa fenêtre : `PluginProvides` ne couvre que `accountPools`, `desktopApp`, `gateway`, `service`, `commands`, `skills`, `prompt` et `slashCommands`. Bureau sert donc une page locale, ouverte dans l'onglet navigateur du panneau.
-
-Un vrai onglet de plugin dans le panneau est une piste, par une contribution à Boite. Il remplacerait la page locale ouverte avec `/bureau`.
+Boite permet maintenant à un plugin d'ajouter des boutons, un onglet de panneau et des commandes de palette (`provides.ui`, permission `ui`, mtsu-dev/boite#1002). Ce n'est pas encore dans une version publiée de Boite. Bureau sert toujours une page locale, ouverte dans l'onglet navigateur du panneau ; un onglet Bureau la remplacerait.
 
 ## Limites connues
 
