@@ -37,7 +37,7 @@ Boite n'autorise qu'un étage de délégation : un sous-agent lancé par `boite 
   "budget": { "maxAgents": 8, "models": ["claude/claude-sonnet-5-5", "claude/claude-haiku-5-5"] },
   "lots": [
     { "id": "L1", "title": "Webhook invoice.paid et ses tests", "service": "Développement", "model": "claude/claude-sonnet-5-5" },
-    { "id": "L2", "title": "Relecture sécurité", "service": "Qualité", "model": "claude/claude-opus-4-8" }
+    { "id": "L2", "title": "Relecture sécurité", "service": "Qualité", "model": "claude/claude-opus-5-5" }
   ]
 }
 ```
