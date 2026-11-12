@@ -2,7 +2,7 @@
 
 Bureau range les conversations que plus personne n'utilise. Il archive, il ne supprime jamais.
 
-> **Limite actuelle** : Boite n'ouvre pas `threads.archive` aux plugins (les permissions possibles sont `threads.read`, `threads.write`, `todos` et `ui.reveal`). Tant que c'est le cas, Bureau applique les règles, tient le journal et le passage à blanc, mais n'archive rien. Un passage réel le dit et sort en erreur (code 1). Voir la [Feuille de route](Feuille-de-route).
+> **Version de Boite** : l'archivage réel demande Boite 2.0.0-nightly.20261111.1 ou plus récent, qui ouvre `threads.archive` aux plugins sous la permission `threads.write`. Boite n'archive alors qu'un fil non épinglé, et seul le propriétaire peut le restaurer. Avec un Boite plus ancien, chaque tentative est refusée, notée au journal (`ok: false`), et le passage réel sort avec le code 1.
 
 ## Règles
 

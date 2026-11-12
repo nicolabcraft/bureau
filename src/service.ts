@@ -337,7 +337,7 @@ export async function startService(options: ServiceOptions): Promise<Service> {
         } catch {
           // A journal that cannot be trimmed is only bigger than wanted.
         }
-        if (result.unavailable) log(`archivage : ${result.candidates.length} fil(s) à archiver, mais Boite n'ouvre pas encore threads.archive aux plugins.`);
+        if (result.unavailable) log(`archivage : ${result.candidates.length} fil(s) à archiver, mais l'archivage réel est coupé dans Bureau (CORE_ARCHIVE_OPEN).`);
         if (result.archived.length > 0) changed();
       }
       return result;

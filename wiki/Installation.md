@@ -26,7 +26,7 @@ Ensuite, dans une conversation, lancer `/bureau` : la vue s'ouvre dans l'onglet 
 | `threads.write` | prévenir le chef quand le plan est validé dans la vue (`turns.start`), arrêter le tour d'un agent (`turns.stop`) |
 | `ui.reveal` | le bouton « Ouvrir la conversation » amène Boite sur le bon fil |
 
-Bureau ne demande pas `threads.archive` : Boite ne l'ouvre pas aux plugins aujourd'hui (voir [Archivage automatique](Archivage-automatique)).
+`threads.write` couvre aussi `threads.archive`, dont l'[archivage automatique](Archivage-automatique) a besoin (Boite 2.0.0-nightly.20261111.1 ou plus récent).
 
 ## Vérifier que ça marche
 
