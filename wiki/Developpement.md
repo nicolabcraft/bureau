@@ -13,7 +13,7 @@ bun run check:manifest # contrôle boite-plugin.json contre les règles du schem
 bun run demo           # le vrai service contre un faux core de Boite
 ```
 
-`boite plugin dev .` charge le plugin dans Boite depuis un dossier local. À lancer depuis un terminal, pas depuis un agent.
+`boite plugin dev <chemin absolu du dossier>` charge le plugin dans Boite depuis un dossier local. À lancer depuis un terminal, pas depuis un agent.
 
 ## Règles du projet
 

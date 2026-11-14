@@ -9,7 +9,7 @@ bun install
 bun run check      # tsc
 bun test           # tests du service, du registre et des commandes
 bun run pack       # bureau.js + skills et sha256 dans boite-plugin.json
-boite plugin dev . # depuis un terminal, pas d'un agent
+boite plugin dev <chemin absolu du dossier> # depuis un terminal, pas d'un agent
 ```
 
 ## Règles
