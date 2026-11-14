@@ -142,6 +142,18 @@ function booSizeCanvases(cam) {
   if (!booBuf || booBuf.c.width !== cam.bw || booBuf.c.height !== cam.bh) booBuf = makeBuffer(cam.bw, cam.bh);
 }
 
+/* Same size as the scene canvas after presentBuffer(zoom): the buffer times the whole zoom step (presentBuffer rounds it the same way). */
+function booSizeText(zoom) {
+  const k = Math.max(1, Math.round(zoom || 1));
+  const w = booBuf.c.width * k;
+  const h = booBuf.c.height * k;
+  if (booText.width !== w || booText.height !== h) {
+    booText.width = w;
+    booText.height = h;
+    booTg.imageSmoothingEnabled = false;
+  }
+}
+
 function booRender(T) {
   try {
     booLastT = T;
@@ -149,6 +161,9 @@ function booRender(T) {
     if (!cam.viewW) { navResize(); if (!cam.viewW) return; }
     booSizeCanvases(cam);
     const g = booBuf.g;
+    // #texte takes the size the scene will have after presentBuffer, before the labels are drawn on it:
+    // resizing a canvas clears it, so a resize after renderBuilding would blank the labels for one frame.
+    booSizeText(NAV.mode === 'advanced' ? cam.zoom : floorCam.zoom);
     if (NAV.mode === 'advanced') {
       renderAdvanced(g, T);
       if (NAV.plan) drawTechPlan(g, T);
@@ -159,11 +174,6 @@ function booRender(T) {
       renderBuilding(g, booTg, floorCam, T);
       booTextClear = true;
       presentBuffer(booScene, booBuf, floorCam.zoom);
-    }
-    if (booText.width !== booScene.width || booText.height !== booScene.height) {
-      booText.width = booScene.width;
-      booText.height = booScene.height;
-      booTg.imageSmoothingEnabled = false;
     }
     if (booText.style.width !== booScene.style.width) booText.style.width = booScene.style.width;
     if (booText.style.height !== booScene.style.height) booText.style.height = booScene.style.height;
@@ -177,6 +187,7 @@ function booRender(T) {
 /* ------------------------------ page ------------------------------ */
 
 function booInit() {
+  palStrict = uiDemo;   // outside the demo, an unknown colour name draws magenta instead of throwing on every frame
   booScene = document.getElementById('scene');
   booText = document.getElementById('texte');
   if (!booScene || !booText) return;

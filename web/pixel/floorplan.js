@@ -29,10 +29,10 @@ const COLS_MIN = 62;
 const COLS_MAX = 96;
 
 // Rows of a plate, px (the 2.4 template: back wall 16, head zone to 64, rooms 64 to 264, corridor, cafeteria wall, entrance wall).
-const fplBack = 16, fplRoomsY = 64, fplRoomH = 200, fplCorY = 264, fplCafeY = 272, fplCafeFloor = 296, fplEntY = 336;
+const fplBack = 16, fplRoomsY = 64, fplRoomH = 200, fplCafeY = 272, fplEntY = 336;
 const fplLandRow = 41;                         // the last walkable row: landings, smoking corner, entry
 const fplLandY = fplLandRow * CELL + 7;      // feet line of a person on a landing (335)
-const fplDeskW = 40, fplDeskH = 12, fplColW = 68, fplHdr = 30;
+const fplDeskW = 40, fplDeskH = 12, fplColW = 68;
 const fplDeskRows = [118, 164, 210];           // desk tops: the manager row and two rows of agents (46 px apart at least: the name fits under the desk)
 const fplMaxPerRoom = 8, fplMaxOffices = 3, fplOfficePitch = 232;
 const fplStairFlights = 10, fplStairXl = -42, fplStairXr = -12;

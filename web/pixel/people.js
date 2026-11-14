@@ -54,7 +54,7 @@ function pplMake(info, targetId) {
     look: lookFor(info.id, info.role),
     co: null, res: [], t: rnd(0, 5), acc: 0, nod: 0, trip: 0, dirty: false,
     arrival: false, arriving: false, deliverPending: false, gone: false, faults: 0,
-    sheet: null, sheetV: undefined, dr: null,
+    sheet: null, sheetV: undefined, dr: null, inCab: false,
   };
   p.dr = { sy: 0, draw: (g, T) => pplDraw(g, p, p.x, p.y, T) };
   return p;
@@ -178,6 +178,14 @@ function pplRemove(p) {
   p.tz = null;
 }
 
+/** Takes the person at PEOPLE[i] out for good, and forgets its look (sheets included) unless the same thread is still here. */
+function pplDrop(i) {
+  const p = PEOPLE[i];
+  PEOPLE.splice(i, 1);
+  if (pplById.get(p.id) === p) pplById.delete(p.id);
+  if (!pplById.has(p.id)) sprForget(p.id);
+}
+
 /**
  * Brings the people in line with an OfficeState (after syncFloors). `animate` false (the first state): everybody
  * is placed at once; true: newcomers walk in by the front door and take the lift or the stairs, the ones who left
@@ -213,7 +221,7 @@ function syncPeople(office, animate) {
     if (!pplSeen.has(p.id) && !p.leaving && !p.gone) pplDepart(p, !!animate);
   }
   for (let i = PEOPLE.length - 1; i >= 0; i--) {
-    if (PEOPLE[i].gone) { pplById.delete(PEOPLE[i].id); PEOPLE.splice(i, 1); }
+    if (PEOPLE[i].gone) pplDrop(i);
   }
 }
 
@@ -496,25 +504,46 @@ function pplEase(k) {
   return k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
 }
 
-/** World y of the feet on the landing of a floor. */
-function pplLandingY(fl) {
-  return floorTop(fl.index, FLOORS.length) + fl.plan.landY;
+/** The live Floor for a floor given as an object or an index; a demolished one gives its nearest neighbour (below it, else the ground floor). */
+function pplLive(f) {
+  const n = FLOORS.length;
+  if (typeof f === 'number') return FLOORS[f] || null;
+  if (!f || !n) return null;
+  if (FLOORS.indexOf(f) >= 0) return f;
+  return FLOORS[clamp(f.index - 1, 0, n - 1)] || null;
 }
 
-/** Walks in tower coordinates (wx, wy) at `speed`; `side` keeps the profile views (stairs). */
-function* pplStepW(p, x, y, speed, side) {
-  const sp = speed || pplSpeed;
-  if (REDUCED) { p.wx = x; p.wy = y; return; }
+/** Index of a floor in the stack right now (-1 when it is not in it). */
+function pplIdx(f) {
+  return FLOORS.indexOf(f);
+}
+
+/** World y of the feet on the landing of a floor, from where the floor is now (a floor added on top or demolished moves the world). */
+function pplLandingY(fl) {
+  const l = pplLive(fl);
+  return floorTop(FLOORS.indexOf(l), FLOORS.length) + l.plan.landY;
+}
+
+/**
+ * Moves in tower coordinates from where the person is to (x1, y1fn()) at `speed` px/s. The y of both ends are
+ * functions, read again at every step: they come from a Floor, so the walk stays on its landing or its flight
+ * when the building changes under it. `side` keeps the profile views (stairs).
+ */
+function* pplMoveW(p, x1, y0fn, y1fn, speed, side) {
+  const x0 = p.wx;
+  if (REDUCED) { p.wx = x1; p.wy = y1fn(); return; }
   p.pose = 'walk';
+  let t = 0;
   let dt = 0.016;
   for (;;) {
-    const dx = x - p.wx;
-    const dy = y - p.wy;
-    const d = Math.hypot(dx, dy);
-    const st = sp * dt;
-    if (d <= st) { p.wx = x; p.wy = y; break; }
-    p.wx += (dx / d) * st;
-    p.wy += (dy / d) * st;
+    const ay = y0fn();
+    const by = y1fn();
+    const dx = x1 - x0;
+    const dy = by - ay;
+    t += (speed * dt) / (Math.hypot(dx, dy) || 1e-6);
+    if (t >= 1) { p.wx = x1; p.wy = by; break; }
+    p.wx = x0 + dx * t;
+    p.wy = ay + dy * t;
     p.dir = side ? (dx > 0 ? 'right' : 'left') : Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : dy > 0 ? 'down' : 'up';
     dt = (yield) || 0.016;
   }
@@ -551,36 +580,71 @@ function* pplLiftClose() {
   while (LIFT.door > 0.02 && guard < 3) guard += (yield) || 0.016;
 }
 
-function* pplLiftMove(i, rider) {
-  if (LIFT.fl === i && !LIFT.moving) return;
+let pplCab = null; // the Floor the cab stands at (or leaves from) while someone rides it
+
+/** The Floor the cab is at. An idle cab is where LIFT.fl says (floor.js keeps it in range); a ridden one is tracked here. */
+function pplCabFloor() {
+  const n = FLOORS.length;
+  if ((!LIFT.owner && !LIFT.moving) || !pplCab || FLOORS.indexOf(pplCab) < 0) pplCab = FLOORS[clamp(LIFT.fl, 0, Math.max(0, n - 1))] || null;
+  return pplCab;
+}
+
+/** A parked cab with a rider follows its floor when the building moves: LIFT.fl, LIFT.y and the rider in it. */
+function pplCabSync(p) {
+  const f = pplLive(pplCab);
+  if (!f) return;
+  pplCab = f;
+  LIFT.fl = FLOORS.indexOf(f);
+  LIFT.y = liftStopY(LIFT.fl);
+  if (p.inCab) p.wy = LIFT.y;
+}
+
+/** Moves the cab to a floor (an object or an index), the rider with it. Ends and starts are read from the floors at every step. */
+function* pplLiftMove(destArg, rider) {
+  let origin = pplCabFloor();
+  let dest = pplLive(destArg);
+  if (!origin || !dest) return;
+  if (origin === dest && !LIFT.moving) return;
   yield* pplLiftClose();
   LIFT.moving = true;
-  const y0 = LIFT.y;
-  const y1 = liftStopY(i);
-  const total = REDUCED ? 0.05 : Math.max(1, Math.abs(y1 - y0) / pplLiftSpeed);
-  LIFT.dir = y1 < y0 ? -1 : 1;
+  const total = REDUCED ? 0.05 : Math.max(1, Math.abs(liftStopY(pplIdx(dest)) - liftStopY(pplIdx(origin))) / pplLiftSpeed);
+  LIFT.dir = liftStopY(pplIdx(dest)) < liftStopY(pplIdx(origin)) ? -1 : 1;
   let t = 0;
   while (t < total) {
     t += (yield) || 0.016;
+    origin = pplLive(origin) || origin;
+    dest = pplLive(dest) || dest;
+    const y0 = liftStopY(pplIdx(origin));
+    const y1 = liftStopY(pplIdx(dest));
     LIFT.y = y0 + (y1 - y0) * pplEase(Math.min(1, t / total));
     if (rider) rider.wy = LIFT.y;
   }
-  LIFT.y = y1;
-  if (rider) rider.wy = y1;
-  LIFT.fl = i;
+  dest = pplLive(dest) || dest;
+  pplCab = dest;
+  LIFT.fl = pplIdx(dest);
+  LIFT.y = liftStopY(LIFT.fl);
+  if (rider) rider.wy = LIFT.y;
   LIFT.moving = false;
   LIFT.dir = 0;
 }
 
+/** A floor given as an object or an index, or null. */
+function pplFloorArg(x) {
+  return typeof x === 'number' ? FLOORS[x] || null : x || null;
+}
+
 /**
- * Rides the lift to floor toIndex: waits for its turn on the landing (one rider at a time), calls the cab, steps in,
- * rides, steps out onto the landing of the destination floor. act is 'lift' during the ride.
+ * Rides the lift to a floor (a Floor, or an index): waits for its turn on the landing (one rider at a time), calls the
+ * cab, steps in, rides, steps out onto the landing of the destination floor. act is 'lift' during the ride. The
+ * destination is kept as a Floor and every y is read from the floors at each step, so a floor added on top or
+ * demolished during the ride changes nothing for the rider; a destination that disappears is replaced by its nearest
+ * floor (the one below it, else the ground floor).
  */
-function* personRideLift(p, toIndex) {
-  const from = p.floor.index;
-  const dest = FLOORS[toIndex];
-  if (from === toIndex || !dest) return;
-  const s = p.floor.plan.spots.lift[0];
+function* personRideLift(p, toArg) {
+  const dest0 = pplFloorArg(toArg);
+  const origin = p.floor;
+  if (!dest0 || origin === dest0) return;
+  const s = origin.plan.spots.lift[0];
   if (!s) return;
   const prev = p.act;
   p.act = 'lift';
@@ -589,65 +653,88 @@ function* personRideLift(p, toIndex) {
     p.dir = 'right';
     p.pose = 'stand';
     while (LIFT.owner && LIFT.owner !== p) yield;
+    pplCabFloor();
     LIFT.owner = p;
-    if (LIFT.fl !== from || LIFT.moving) yield* pplLiftMove(from, null);
+    if (pplCabFloor() !== pplLive(origin) || LIFT.moving) yield* pplLiftMove(origin, null);
     yield* pplLiftOpen();
     const plan = p.floor.plan;
     const cabX = LIFT.x !== undefined ? LIFT.x : plan.width + pplLiftIn;
     yield* personStepTo(p, plan.width + 2, plan.landY, 26);
     pplEnterTower(p, 'lift');
-    yield* pplStepW(p, cabX, p.wy, 26);
+    const here = () => pplLandingY(origin);
+    yield* pplMoveW(p, cabX, here, here, 26, false);
+    p.inCab = true;
     p.dir = 'down';
     p.pose = 'stand';
     yield* actWait(0.35);
-    yield* pplLiftMove(toIndex, p);
+    yield* pplLiftMove(dest0, p);
     yield* pplLiftOpen();
     yield* actWait(0.25);
+    p.inCab = false;
     p.dir = 'left';
-    yield* pplStepW(p, dest.plan.width + 2, pplLandingY(dest), 26);
+    const there = () => pplLandingY(dest0);
+    yield* pplMoveW(p, pplLive(dest0).plan.width + 2, there, there, 26, false);
+    const dest = pplLive(dest0);
     pplLeaveTower(p, dest, dest.plan.width + 2);
     const out = dest.plan.spots.lift[0];
     yield* personStepTo(p, out.x * CELL + 4, dest.plan.landY, 26);
     p.cx = out.x;
     p.cy = out.y;
   } finally {
+    p.inCab = false;
     if (LIFT.owner === p) { LIFT.owner = null; LIFT.want = 0; }
     p.act = prev;
   }
 }
 
 /**
- * Climbs or descends the stair tower flight by flight, one floor at a time, and comes out on the landing of
- * floor toIndex. act is 'stairs' on the way.
+ * Climbs or descends the stair tower flight by flight, one floor at a time, and comes out on the landing of the
+ * destination (a Floor, or an index). act is 'stairs' on the way. Like the lift, each flight is anchored to the Floor
+ * under it (its y is the landing of that floor plus the offset of the flight point), so the building may change.
  */
-function* personRideStairs(p, toIndex) {
-  const from = p.floor.index;
+function* personRideStairs(p, toArg) {
+  const dest0 = pplFloorArg(toArg);
   const n = FLOORS.length;
-  if (from === toIndex || !FLOORS[toIndex]) return;
-  const s = p.floor.plan.spots.stairs[0];
+  if (!dest0 || p.floor === dest0 || n < 2) return;
+  const origin = p.floor;
+  const s = origin.plan.spots.stairs[0];
   if (!s) return;
   yield* personWalkTo(p, s.x, s.y);
   p.dir = 'left';
-  yield* personStepTo(p, -4, p.floor.plan.landY, 26);
+  yield* personStepTo(p, -4, origin.plan.landY, 26);
   const prev = p.act;
   try {
     p.act = 'stairs';
     pplEnterTower(p, 'stairs');
-    yield* pplStepW(p, -6, p.wy, 26, true);
-    const up = toIndex > from;
-    let lv = from;
-    while (lv !== toIndex) {
-      const pts = stairPoints(up ? lv : lv - 1, n);
-      if (!pts.length) break;
-      if (!up) pts.reverse();
-      for (let k = 0; k < pts.length; k++) yield* pplStepW(p, pts[k][0], pts[k][1], 34, true);
-      lv += up ? 1 : -1;
+    const tpl = stairPoints(0, n);                       // x of each point and its y above the landing of the lower floor
+    const off = (m) => tpl[m][1] - tpl[0][1];
+    let cur = origin;
+    const here = () => pplLandingY(origin);
+    yield* pplMoveW(p, -6, here, here, 26, true);
+    for (let guard = 0; guard < 24; guard++) {
+      const goal = pplLive(dest0);
+      cur = pplLive(cur);
+      const ci = pplIdx(cur);
+      const gi = pplIdx(goal);
+      if (!goal || ci === gi || ci < 0) break;
+      const up = gi > ci;
+      const lo = up ? cur : FLOORS[ci - 1];
+      const top = tpl.length - 1;
+      let prevM = up ? 0 : top;
+      for (let k = 0; k <= top; k++) {
+        const m = up ? k : top - k;
+        const pm = prevM;
+        yield* pplMoveW(p, tpl[m][0], () => pplLandingY(lo) + off(pm), () => pplLandingY(lo) + off(m), 34, true);
+        prevM = m;
+      }
+      cur = up ? FLOORS[ci + 1] : lo;
     }
-    const dest = FLOORS[lv];
-    yield* pplStepW(p, -6, pplLandingY(dest), 26, true);
-    pplLeaveTower(p, dest, -6);
-    const out = dest.plan.spots.stairs[0];
-    yield* personStepTo(p, out.x * CELL + 4, dest.plan.landY, 26);
+    const exit = pplLive(cur) || pplLive(dest0);
+    const there = () => pplLandingY(exit);
+    yield* pplMoveW(p, -6, there, there, 26, true);
+    pplLeaveTower(p, exit, -6);
+    const out = exit.plan.spots.stairs[0];
+    yield* personStepTo(p, out.x * CELL + 4, exit.plan.landY, 26);
     p.cx = out.x;
     p.cy = out.y;
   } finally {
@@ -656,18 +743,23 @@ function* personRideStairs(p, toIndex) {
 }
 
 /**
- * Goes to floor toIndex: to the landing, through the wall to the tower, the ride, out onto the landing. `how`:
- * 'lift' | 'stairs' | null (null: the stairs half of the time for one floor, else the lift). A trip is never
- * interrupted (p.trip).
+ * Goes to a floor (a Floor, or an index): to the landing, through the wall to the tower, the ride, out onto the
+ * landing. `how`: 'lift' | 'stairs' | null (null: the stairs half of the time for one floor, else the lift). The
+ * target is kept as a Floor: if it is demolished on the way, the person comes out at the nearest floor (below it,
+ * else the ground floor). A trip is never interrupted (p.trip).
  */
-function* personTravel(p, toIndex, how) {
+function* personTravel(p, toArg, how) {
+  const dest0 = pplFloorArg(toArg);
+  if (!dest0) return;
   p.trip++;
   try {
-    for (let guard = 0; p.floor.index !== toIndex && guard < 6; guard++) {
-      const d = toIndex - p.floor.index;
+    for (let guard = 0; guard < 6; guard++) {
+      const dest = pplLive(dest0);
+      if (!dest || p.floor === dest) break;
+      const d = pplIdx(dest) - pplIdx(p.floor);
       const stairs = how === 'stairs' || (how !== 'lift' && Math.abs(d) === 1 && rnd(0, 1) < 0.5);
-      if (stairs) yield* personRideStairs(p, toIndex);
-      else yield* personRideLift(p, toIndex);
+      if (stairs) yield* personRideStairs(p, dest);
+      else yield* personRideLift(p, dest);
     }
   } finally {
     p.trip--;
@@ -749,7 +841,7 @@ function* pplLeave(p) {
   p.desk = null;
   p.seated = false;
   p.seatId = null;
-  if (p.floor.index !== 0) yield* personTravel(p, 0, 'lift');
+  if (p.floor !== FLOORS[0]) yield* personTravel(p, FLOORS[0], 'lift');
   const fl = p.floor;
   const plan = fl.plan;
   const s = plan.spots.entry[0];
@@ -791,7 +883,7 @@ function* pplLife(p) {
     tf = pplTarget(p);
   }
   if (tf && tf !== p.floor) {
-    yield* pplAs(p, 'walk', personTravel(p, tf.index, null));
+    yield* pplAs(p, 'walk', personTravel(p, tf, null));
     if (p.leaving) return;
   }
   pplBindDesk(p);
@@ -860,6 +952,8 @@ function pplStep(p, dt) {
     const k = 4 * dt;
     p.alpha = p.alpha < p.alphaT ? Math.min(p.alphaT, p.alpha + k) : Math.max(p.alphaT, p.alpha - k);
   }
+  if (p.tz === 'lift' && LIFT.owner === p && !LIFT.moving) pplCabSync(p);
+  if (!p.tz && FLOORS.indexOf(p.floor) < 0) p.floor = pplLive(p.floor) || p.floor;   // the floor was demolished under them
   if (p.floor.plan !== p.plan) pplRelayout(p);
   if (p.conv) { if (p.act === null) p.act = 'chat'; }
   else if (p.act === 'chat') p.act = null;
@@ -881,7 +975,7 @@ function pplStep(p, dt) {
 function tickPeople(dt) {
   for (let i = PEOPLE.length - 1; i >= 0; i--) {
     const p = PEOPLE[i];
-    if (p.gone) { pplById.delete(p.id); PEOPLE.splice(i, 1); continue; }
+    if (p.gone) { pplDrop(i); continue; }
     let step = dt;
     if (p.floor && p.floor.tier === 2 && !p.tz && p.trip === 0 && !p.arriving) {
       p.acc += dt;
