@@ -217,7 +217,7 @@ describe('floorplan.js is pure and alone', () => {
     expect(/(^|[^.\w])window(?!\s*:)/.test(code)).toBe(false);
   });
   test('no dash, no emoji, LF only', () => {
-    expect(/[–—]/.test(source)).toBe(false);
+    expect(/[\u2013\u2014]/.test(source)).toBe(false);
     expect(/[\u{1F000}-\u{1FFFF}]/u.test(source)).toBe(false);
     expect(source.includes('\r')).toBe(false);
   });
@@ -743,7 +743,7 @@ describe('floor.js (L3 phase 2): hygiene that needs no browser', () => {
     for (const name of topLevelNames(floorSource)) expect(mine.has(name)).toBe(false);
   });
   test('no dash, no emoji, LF only, nothing remote, nothing runs at load', () => {
-    expect(/[–—]/.test(floorSource)).toBe(false);
+    expect(/[\u2013\u2014]/.test(floorSource)).toBe(false);
     expect(/[\u{1F000}-\u{1FFFF}]/u.test(floorSource)).toBe(false);
     expect(floorSource.includes('\r')).toBe(false);
     expect(/https?:\/\//.test(floorSource)).toBe(false);
