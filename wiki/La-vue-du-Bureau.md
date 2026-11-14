@@ -2,72 +2,95 @@
 
 La vue est une page locale servie par le service sur `127.0.0.1`, ouverte dans l'onglet navigateur du panneau de Boite (`/bureau`). Elle ne fait que dessiner l'état que le service lui envoie, en direct. Aucune ressource distante n'est chargée.
 
-![L'immeuble des projets](https://raw.githubusercontent.com/nicolabcraft/bureau/main/docs/capture.png)
+La vue est en pixel art, vue de dessus : les étages sont empilés, chacun est un plan. La vue isométrique précédente n'est plus servie.
+
+![Un étage, de jour](https://raw.githubusercontent.com/nicolabcraft/bureau/main/docs/captures/pixel-etage.png)
+
+![Un étage, de nuit](https://raw.githubusercontent.com/nicolabcraft/bureau/main/docs/captures/pixel-nuit.png)
+
+![Un nouveau projet en chantier, avec sa grue](https://raw.githubusercontent.com/nicolabcraft/bureau/main/docs/captures/pixel-chantier.png)
+
+![La vue avancée, avec le journal](https://raw.githubusercontent.com/nicolabcraft/bureau/main/docs/captures/pixel-avancee.png)
+
+![Le plan technique](https://raw.githubusercontent.com/nicolabcraft/bureau/main/docs/captures/pixel-plan.png)
+
+![Sur un téléphone](https://raw.githubusercontent.com/nicolabcraft/bureau/main/docs/captures/pixel-mobile.png)
 
 ## L'immeuble
 
-- Un immeuble vu en isométrique, au milieu d'une petite ville. **Un étage par projet Boite** qui a au moins une conversation en cours ; les conversations sans projet occupent l'étage « Sans projet ».
-- Un nouveau projet ajoute un étage au sommet : grue, dalle, murs, mobilier, puis ses agents arrivent par la porte d'entrée et prennent l'ascenseur. L'ordre des étages est gardé d'une visite à l'autre.
-- Vu de l'extérieur, un étage est fermé : ses fenêtres s'allument selon le nombre d'agents présents, et une ou deux fenêtres ambre pulsent quand un agent attend une réponse. Un projet qui n'a plus de conversation pendant 20 secondes perd son étage : ses agents sortent, l'étage est démoli (fenêtres éteintes, grue, murs et dalle retirés) et les étages du dessus descendent. Le rez-de-chaussée, qui porte l'entrée, reste en place, vide.
-- Cliquer un étage (sur la façade ou dans le panneau « Immeuble ») l'ouvre : les étages du dessus s'effacent et on voit l'intérieur. « Vue d'ensemble » ou Échap referment tout.
-- L'éclairage suit l'heure réelle : matin, journée, soir, nuit avec lampes de bureau, lampadaires et vitrines.
-
-![La nuit](https://raw.githubusercontent.com/nicolabcraft/bureau/main/docs/captures/immeuble-nuit.png)
-
-![Un nouveau projet en chantier](https://raw.githubusercontent.com/nicolabcraft/bureau/main/docs/captures/immeuble-chantier.png)
-
-![Un étage ouvert](https://raw.githubusercontent.com/nicolabcraft/bureau/main/docs/captures/immeuble-etage.png)
+- **Un étage par projet Boite** qui a au moins une conversation en cours ; les conversations sans projet occupent le rez-de-chaussée, « Sans projet », qui reste toujours en bas.
+- Chaque étage a son escalier, son ascenseur, sa cafétéria et ses sanitaires. Le rez-de-chaussée a aussi la porte d'entrée et le banc d'attente.
+- Un agent qui change de projet prend l'ascenseur jusqu'à son nouvel étage. Un agent dont la conversation est archivée descend et sort par la porte d'entrée, et un message le signale.
+- Un nouveau projet fait construire son étage : grue au sommet, dalle, murs, mobilier. Une nouvelle équipe fait construire sa zone.
+- Un projet sans conversation pendant 20 secondes perd son étage : ses agents sortent, l'étage est démoli (chantier à l'envers) et les étages du dessus descendent.
+- L'éclairage suit l'heure réelle : jour, soir, nuit avec lampes de bureau et lumière des fenêtres.
 
 ## Un étage
 
-- Le chef de l'équipe la plus récente occupe le bureau vitré, avec le nom du projet sur sa plaque.
-- Une zone par service (sol de couleur, cloisons basses, plaque avec le nom du service), son responsable en tête. Les autres équipes du projet ont chacune leur zone ; les conversations seules partagent la zone « Conversations ». Quand il y a trop de zones, les plus petites se regroupent dans « Autres ».
-- Une nouvelle équipe ou mission sur un étage existant fait construire sa zone : barrière, sol, cloisons, puis les bureaux un par un.
-- Chaque étage a sa cafétéria et l'ascenseur. Le rez-de-chaussée a aussi la porte d'entrée et le banc d'attente.
-- Un agent qui change de projet prend l'ascenseur jusqu'à son nouvel étage. Un agent dont la conversation est archivée descend, sort par la porte d'entrée, et un message le signale.
+- Une zone par service (sol de couleur, plaque avec le nom du service), son responsable en tête. Les autres équipes du projet ont chacune leur zone ; les conversations seules ont la zone « Conversations ».
+- Chaque agent est un personnage à son poste. Son état se lit sur la scène (tableau ci-dessous).
+- Les agents qui se parlent ont une bulle. Un clic sur la bulle ouvre la boîte de dialogue avec les deux portraits, et « Ouvrir la conversation » amène Boite sur le fil.
 
 ## Les états d'un agent
 
-La posture du personnage dit l'état de son fil Boite.
-
-| Libellé de la fiche | Sur la scène | Sens |
-|---|---|---|
-| En cours | assis, écran allumé, il tape | un tour tourne |
-| Attend ta réponse | main levée, bulle « ? », entouré d'ambre, nom affiché | une permission ou une question attend l'utilisateur |
-| En file d'attente | banc de l'entrée à son arrivée, puis sablier à son bureau | le tour attend un créneau |
-| En pause | à la cafétéria, gobelet en main | conversation racine au repos |
-| Fini | rend son dossier à son responsable, puis cafétéria, grisé | enfant au repos, ou responsable qui a déposé son rapport |
-| En erreur | bulle rouge | le fil est en erreur |
-| Arrêté | inchangée | tour arrêté depuis la vue (affichage local) |
+| Libellé de la fiche | Sur la scène |
+|---|---|
+| En cours | assis à son poste, écran allumé, il tape |
+| Attend ta réponse | main levée, bulle « ? » ambre, contour ambre, nom affiché en permanence |
+| En file d'attente | banc de l'entrée à son arrivée, puis à son poste avec un sablier |
+| En pause | une action de vie de bureau : café, imprimante, plantes, fenêtre |
+| Fini | apporte son dossier à son responsable, puis pause, légèrement grisé |
+| En erreur | assis, bulle rouge ; il appelle son responsable, qui vient voir |
 
 Règles complètes de dérivation : voir [Développement](Developpement), section « État d'un personnage ».
-
-## Le panneau Immeuble
-
-En haut à gauche, un bouton par étage, du haut vers le bas : nom du projet, nombre d'agents, jauge, « N attend » en ambre, « Plan à valider » quand une mission attend la validation, « chantier » pendant la construction. Sur un écran étroit, le panneau devient une bande d'étages.
-
-![Sur un téléphone](https://raw.githubusercontent.com/nicolabcraft/bureau/main/docs/captures/immeuble-mobile.png)
 
 ## Les gestes
 
 | Geste | Effet |
 |---|---|
-| Bouton « ? » des outils | légende : ce que disent les postures, les fenêtres ambre, la grue et l'ascenseur |
+| Molette | fait défiler l'immeuble ; Maj + molette : côté |
+| Ctrl + molette, pincement | zoom, par crans entiers |
+| Glisser | déplace la vue |
 | Survoler un agent | bulle : nom, rôle et service, état et depuis quand, lot de mission |
 | Cliquer un agent | ouvre sa fiche : portrait, état, service, supérieur, modèle, fichiers attribués, dernier rapport |
+| Cliquer une bulle | ouvre la boîte de dialogue des deux agents |
 | Ouvrir la conversation | amène Boite sur la conversation de l'agent |
 | Répondre | même chose : la réponse à une permission ou à une question se fait dans Boite |
 | Arrêter | arrête le tour de l'agent, après une confirmation |
 | Qui m'attend | liste les agents qui attendent une réponse et atténue les autres ; un clic ouvre l'étage et la fiche de l'agent |
 | Plan de mission | le plan de l'étage ouvert, sinon le plus récent à valider ; « Valider le plan » tant qu'il est proposé |
-| Molette, pincement, + et - | zoom |
-| Glisser, flèches | déplacer |
-| Clic droit glissé, Q et E, deux doigts | tourner |
-| Double clic, 0 | recentrer |
-| PageHaut, PageBas | étage du dessus, du dessous |
+
+### Étages et clavier
+
+La barre d'étages est à droite, un bouton par étage, du haut vers le bas, avec `-`, `x2` et `+` pour le zoom. Sur un téléphone, la barre devient une bande en bas : Escalier, Étage, Ascenseur.
+
+| Touche | Effet |
+|---|---|
+| PageHaut, flèche haut | étage du dessus |
+| PageBas, flèche bas | étage du dessous |
+| Début (Home) | dernier étage, le plus haut |
+| Fin (End) | rez-de-chaussée |
+| Flèches gauche et droite | déplace la vue sur le côté |
+| `+` et `-` | zoom |
+| `0` | recentre l'étage (ajuste le zoom) |
 | Échap | ferme la fiche, puis revient à la vue d'ensemble |
 
-![Survol d'un agent qui attend](https://raw.githubusercontent.com/nicolabcraft/bureau/main/docs/captures/immeuble-survol.png)
+## Vue avancée
+
+Le bouton « Vue avancée » affiche une coupe de l'immeuble : chaque étage est une bande, avec ses salles et ses postes de gauche à droite, la cage de l'ascenseur à droite et la rue en bas.
+
+- Les délégations et les rapports partent en capsules : de l'agent qui délègue vers celui qui reçoit, d'un étage à l'autre s'il le faut.
+- Le **journal** à droite classe les événements en quatre onglets : Tout, Travail (délégations, rapports, plans, arrivées, départs), Papotage (les échanges entre agents) et Alertes (bloqué, attend une réponse).
+- Survoler une ligne du journal met en évidence ses deux agents ; un clic sur la ligne amène la vue sur l'agent.
+
+## Plan technique
+
+Le bouton « Plan technique », visible dans la vue avancée, dessine l'arbre de délégation de bureau en bureau, avec le modèle écrit sous chaque bureau. Les étiquettes ne se recouvrent pas.
+
+## En-tête et messages
+
+- « Qui m'attend » et le bouton « Plan de mission » sont dans l'en-tête, avec leur compteur.
+- Les messages courts (validation, erreur, archivage) apparaissent en haut de la scène, puis disparaissent.
 
 ## Bandeau de connexion
 
@@ -76,11 +99,11 @@ En haut à gauche, un bouton par étage, du haut vers le bas : nom du projet, no
 
 ## Accessibilité
 
-Avec « réduire les animations » activé dans le système, plus personne ne marche : chacun apparaît directement à sa place, les étages et les zones apparaissent sans chantier, et le zoom, la rotation et le changement d'étage sont instantanés.
+Avec « réduire les animations » activé dans le système, le texte des bulles s'affiche d'un coup, et le changement d'étage et le zoom sont instantanés.
 
 ## Fluidité
 
-Mesurée avec 5 étages et 40 agents : au moins 60 images par seconde en glisser, zoom et rotation, de jour comme de nuit. Le décor fixe est dessiné une fois puis réutilisé, les étages fermés ne dessinent que leur façade, et le niveau de détail baisse quand on dézoome. Voir [Développement](Developpement) pour la mesure.
+Mesurée avec `bun run demo` en mode gros (5 projets, 40 agents), fenêtre 1280 x 800 : au moins 60 images par seconde en vue d'étage, de jour comme de nuit, en défilement d'un étage au suivant, en vue avancée et sur le plan technique. Le décor fixe de chaque étage est dessiné hors écran puis réutilisé. Voir [Développement](Developpement) pour le détail et la méthode de mesure, et `docs/vue-pixel.md`, section 3, pour le tableau.
 
 ## Ce que la vue montre ou non
 

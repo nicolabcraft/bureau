@@ -5,11 +5,11 @@
 
 **Les agents de Boite, vus comme de petits employés dans un immeuble (un étage par projet), avec un chef, des responsables et des agents pour cadrer chaque travail délégué.**
 
-![Bureau : l'immeuble des projets dans le panneau de Boite](docs/capture.png)
+![Bureau : la vue pixel de l'immeuble des projets dans le panneau de Boite](docs/capture.png)
 
 Bureau est un plugin de [Boite](https://github.com/mtsu-dev/boite). Il fait deux choses :
 
-- **Une vue.** Un immeuble en isométrique, un étage par projet Boite, au milieu d'une petite ville vivante. Chaque conversation devient un personnage à son bureau : il tape, lève la main quand il vous attend, va prendre un café quand il a fini, prend l'ascenseur quand il change de projet. Zoom, rotation, éclairage selon l'heure. Une page locale sur `127.0.0.1`, ouverte dans le panneau de Boite, sans aucune ressource distante.
+- **Une vue.** Un immeuble en pixel art vu de dessus, un étage par projet Boite, empilés comme des plateaux. Chaque conversation devient un personnage à son poste : il tape, lève la main quand il vous attend, va prendre un café quand il a fini, prend l'ascenseur ou l'escalier quand il change de projet. Les agents qui se parlent ont leurs bulles. La vue avancée montre les délégations et les rapports en capsules, avec un journal des échanges, et un plan technique. Éclairage selon l'heure. Une page locale sur `127.0.0.1`, ouverte dans le panneau de Boite, sans aucune ressource distante.
 - **Une organisation.** Un chef de projet découpe votre demande en lots et attend votre validation. Des responsables de service lancent chacun leurs agents, relisent chaque rendu et rapportent au format prévu.
 
 ## Ce que fait Bureau
