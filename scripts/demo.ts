@@ -82,6 +82,8 @@ if (gros) {
   add('a-maquettes', { title: 'Maquettes accueil', projectId: 'dh', parentThreadId: 'm-design', status: 'idle', model: 'claude-sonnet-5-5' });
   add('a-tests', { title: 'Tests portail', projectId: 'dh', parentThreadId: 'm-qa', status: 'queued', model: 'claude-haiku-5-5' });
   add('a-crit', { title: 'Critères d’acceptation', projectId: 'dh', parentThreadId: 'm-prod', status: 'idle', model: 'claude-haiku-5-5' });
+  // At rest for 7 h in a Bureau team: the archiving pass at about 36 s takes it (its agent walks out, reason "archived").
+  add('a-old', { title: 'Audit des dépendances', projectId: 'dh', parentThreadId: 'm-dev', status: 'idle', model: 'claude-haiku-5-5', updatedAt: now - 7 * 60 * min });
   roles.push(
     { id: 'm-qa', service: 'Qualité', chefId: 'chef' },
     { id: 'm-prod', service: 'Produit', chefId: 'chef' },
@@ -143,7 +145,17 @@ await updateRegistry(dataDir, (registry) => {
   // m-prod filed its report: it is done, and goes to the cafeteria after handing the report to the chef.
   if (!gros) registry.reports['m-prod'] = { text: 'Critères d’acceptation écrits et validés.', at: Date.now() };
 });
-const service = await startService({ dataDir, page: readPage, version: 'demo', coreUrl: core.url, token: TOKEN, port: Number(process.env.BUREAU_PORT ?? 47318) });
+const service = await startService({
+  dataDir,
+  page: readPage,
+  version: 'demo',
+  coreUrl: core.url,
+  token: TOKEN,
+  port: Number(process.env.BUREAU_PORT ?? 47318),
+  // Boite's own archiving, played by the fake core: the thread is marked archived.
+  archiver: async (id) => depart(id),
+  archiveEveryMs: 0,
+});
 console.log(`Démo Bureau : http://127.0.0.1:${service.port}/${gros ? ' (mode gros : 5 projets, 40 agents)' : ''}`);
 
 // ---- Scripted life: a timeline, then a loop that keeps the floors busy -------------------
@@ -191,8 +203,14 @@ if (gros) {
   at(9, () => run('m-qa'));
   await missionLife('chef', 'a-comptes', 12, 26);
   at(14, () => ask('a-tests'));
+  // An agent fails, then is restarted: a "blocked" scene.
+  at(20, () => update('a-ecrans', { status: 'error', runningSince: null }));
+  at(27, () => run('a-ecrans'));
+  // A manager files a report with `boite bureau-rapport`: a "report" scene with a text (the first one, at 6 s, ends with no report).
+  at(40, () => updateRegistry(dataDir, (registry) => void (registry.reports['a-stock'] = { text: 'Stock synchronisé avec la caisse, écarts corrigés.', at: Date.now() })));
   at(16, () => arrive('a-export', 'Export des factures', 'm-dev', 'dh'));
   at(19, () => run('a-export'));
+  // The user answers the request of a-tests (waiting since 14 s): an "answered" scene.
   at(21, () => run('a-tests'));
   // An agent changes project: Critères d’acceptation goes from the Boutique to the Atelier, under its manager.
   at(23, () => update('a-crit', { projectId: 'hx', parentThreadId: 'm-at' }));
@@ -205,6 +223,7 @@ if (gros) {
     core.emit('thread.created', row);
   });
   at(34, () => depart('a-sql'));
+  at(36, () => void service.archiveNow({ mode: 'manuel' }));
   // The team of the new floor shows up once the chantier is over (about 11 s).
   at(44, () => arrive('m-portail', 'Manager Développement', 'portail', 'pa'));
   at(45, async () => {

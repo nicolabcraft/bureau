@@ -121,6 +121,45 @@ export interface ProjectInfo {
   name: string;
 }
 
+/** What happened in the office, for the conversations the view plays. */
+export type OfficeEventKind = 'arrive' | 'depart' | 'delegate' | 'report' | 'blocked' | 'waiting' | 'answered' | 'plan';
+
+export interface OfficeEventBase {
+  /**
+   * Unique, `<epoch ms>-<n>`. The view plays an id once and keeps the ids it has seen.
+   * Ids are not ordered across service runs, `at` is.
+   */
+  id: string;
+  /** Epoch ms the service saw the change. */
+  at: number;
+  /** The team the event belongs to (`Team.id`): the view finds the floor from it. */
+  teamId: string;
+  /** The thread the event is about: the worker, the newcomer, the leaver, the chef of a plan. */
+  agentId: string;
+  /** Its title at that moment: a thread that left is no longer in `teams`. */
+  title: string;
+}
+
+export type OfficeEvent = OfficeEventBase &
+  (
+    /** A thread appeared in the office. `parentId`: the thread above it, null for a root. */
+    | { kind: 'arrive'; parentId: string | null }
+    /** A thread left the office: archived by Bureau, or gone from the live list (deleted, archived elsewhere, team out of the day). */
+    | { kind: 'depart'; reason: 'archived' | 'gone' }
+    /** `fromId` hands work to `agentId`. `lotId`: the mission lot, when one was attached at that time. */
+    | { kind: 'delegate'; fromId: string; lotId: string | null }
+    /** `agentId` handed its work back. `hasReport`: it filed a report (`boite bureau-rapport`). `toId`: who receives it, null for a root. */
+    | { kind: 'report'; toId: string | null; lotId: string | null; hasReport: boolean }
+    /** `agentId` went to `error`. `toId`: the thread above it, null for a root. */
+    | { kind: 'blocked'; toId: string | null }
+    /** `agentId` waits for the user. */
+    | { kind: 'waiting'; waitingFor: 'permission' | 'question' }
+    /** `agentId` stopped waiting: the user answered. */
+    | { kind: 'answered' }
+    /** A mission changed phase; `agentId` is its chef. */
+    | { kind: 'plan'; phase: 'proposed' | 'validated' | 'done'; missionId: string }
+  );
+
 export interface OfficeState {
   /** Most recent activity first. Archived threads are left out. */
   teams: Team[];
@@ -132,6 +171,11 @@ export interface OfficeState {
   generatedAt: number;
   /** Conversations archived in the last day, newest first. An archived agent is gone from teams: the view walks it out by the front door. */
   archives: ArchiveNote[];
+  /**
+   * Recent events, oldest first: the last two minutes, 40 at most. Empty right after the service connects:
+   * it never replays the past.
+   */
+  events: OfficeEvent[];
 }
 
 /**
