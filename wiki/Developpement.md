@@ -35,7 +35,7 @@ flowchart LR
   subgraph Bureau
     SVC["Service (src/service.ts)"]
     REG["Registre (registre.json)"]
-    WEB["Vue (web/, assemblée par src/page.ts)"]
+    WEB["Vue pixel (web/pixel/, assemblée par src/page.ts)"]
   end
   CORE <-->|"threads.*, événements, turns.*, ui.reveal"| SVC
   SVC -->|"HTTP + SSE sur 127.0.0.1"| WEB
@@ -55,12 +55,12 @@ flowchart LR
 | `src/commands.ts` | les six commandes `boite bureau*` |
 | `src/archive.ts` | règles d'archivage (`decideArchive`, pur), passage, réglages, journal |
 | `src/model.ts` | le contrat de données entre le service et la vue |
-| `src/page.ts` | assemble la page de la vue : `web/index.html`, les modules de `web/immeuble/` dans une seule portée, puis `web/app.js` ; figée dans `bureau.js` au paquetage, relue à chaque requête en démo |
-| `web/index.html` | balisage et styles de la vue |
-| `web/app.js` | liaison avec le service : état reçu, fiche, listes, plan, boutons |
+| `src/page.ts` | assemble la page servie. `readPage()` : la vue pixel, `web/pixel/shell.html` avec les 22 modules de `PIXEL_FILES` dans une seule portée, puis `web/pixel/app.js`. `readIsoPage()` : la vue isométrique, gardée et testée mais plus servie. Figée dans `bureau.js` au paquetage, relue à chaque requête en démo |
+| `web/pixel/` | la vue pixel : 22 modules, un propriétaire par fichier, chargés dans l'ordre de `PIXEL_FILES`. Moteur (`palette`, `font`, `engine`), immeuble (`floorplan` pur, `floor`, `build`, `sky`), personnages (`sprites`, `actions`, `people`), discussions (`dialogues` pur, `talk`, `dialog`), interface (`nav`, `facade`, `input`, `ui`, `boot`), vue avancée (`advanced`, `tubes`, `journal`, `techplan`). `shell.html` : balisage et styles, marque `<!-- scripts -->`. `app.js` : liaison avec le service (état, fiche, « Qui m'attend », plan, bandeau), qui ne parle à la scène que par `window.Pixel`. Contrat : `docs/vue-pixel.md` |
+| `web/index.html`, `web/app.js` | la vue isométrique, non servie : balisage et liaison, avec `web/immeuble/` |
 | `web/immeuble/` | la scène isométrique, en modules : `noyau`, `moteur`, `controles`, `boucle` (caméra, rendu), `etages`, `chantier` (immeuble), `agents`, `ville`, `lumiere`, `plan` (plan pur de l'immeuble), `donnees` (état vers scène), `hud` (panneau, bulle). Contrat : `docs/vue-immeuble.md` |
 | `skills/` | sources des trois skills |
-| `scripts/` | `pack.ts`, `check-manifest.ts`, `demo.ts`, `mesure-vue.js` (mesure de fluidité de la vue) |
+| `scripts/` | `pack.ts`, `check-manifest.ts`, `demo.ts`, `mesure-pixel.js` (fluidité de la vue pixel), `mesure-vue.js` (fluidité de la vue isométrique) |
 | `test/` | tests Bun et aides (`helpers.ts` : faux core, dossiers temporaires) |
 
 ## Contrat de données
@@ -140,13 +140,14 @@ Arbre de l'équipe : le fil au-dessus de chaque fil est son `parentThreadId`, sa
 bun test
 ```
 
-248 tests dans 10 fichiers, sans accès à un vrai Boite :
+452 tests dans 14 fichiers, sans accès à un vrai Boite :
 
 | Fichier | Couvre |
 |---|---|
 | `test/state.test.ts` | construction de l'`OfficeState`, états, arbre d'équipe, projets |
-| `test/plan.test.ts` | plan de l'immeuble : étages, ordre, zones, places, débordements |
-| `test/page.test.ts` | page assemblée : modules présents, scripts valides, pas de nom déclaré deux fois, aucune ressource distante |
+| `test/plan.test.ts` | plan de l'immeuble isométrique : étages, ordre, zones, places, débordements |
+| `test/page.test.ts` | page pixel (`readPage`) : assemblage, scripts valides, pas de nom déclaré deux fois dans `web/pixel/`, aucune ressource distante, ids du balisage ; page isométrique (`readIsoPage`) : mêmes contrôles |
+| `test/events.test.ts`, `test/dialogues.test.ts`, `test/floorplan.test.ts`, `test/pixel-engine.test.ts` | événements (L1), répliques (fichier pur, L5), plan de l'immeuble (fichier pur, L3), moteur de la vue pixel |
 | `test/registry.test.ts` | registre, verrou, missions, lots |
 | `test/commands.test.ts` | les commandes, leurs sorties et codes de sortie |
 | `test/service.test.ts` | le service, l'API HTTP, le flux d'événements |
@@ -163,11 +164,13 @@ bun test
 bun run demo
 ```
 
-Lance le vrai service contre un faux core qui tient plusieurs projets réalistes et les fait évoluer : arrivées, départs, attentes, mission proposée puis validée, agent qui change de projet, nouveau projet vers 30 s (un étage se construit). `BUREAU_DEMO=gros` donne 5 projets et 40 agents. Rien ne s'ouvre tout seul : la commande affiche l'adresse (`http://127.0.0.1:47318/` par défaut, `BUREAU_PORT` pour en changer). Dans Boite : `boite browse <adresse>`. La page est relue à chaque chargement : une modification de `web/` se voit sans relancer la démo. `?demo=1` dans l'adresse affiche le réglage de l'heure.
+Lance le vrai service contre un faux core qui tient plusieurs projets réalistes et les fait évoluer : arrivées, départs, attentes, mission proposée puis validée, agent qui change de projet, nouveau projet à 30 s (son étage se construit, grue comprise, et son équipe arrive vers 44 s). `BUREAU_DEMO=gros` donne 5 projets et 40 agents. Rien ne s'ouvre tout seul : la commande affiche l'adresse (`http://127.0.0.1:47318/` par défaut, `BUREAU_PORT` pour en changer). Dans Boite : `boite browse <adresse>`. La page est relue à chaque chargement : une modification de `web/` se voit sans relancer la démo. `?demo=1` dans l'adresse affiche le réglage de l'heure.
 
 ### Mesurer la fluidité
 
-Avec `BUREAU_DEMO=gros bun run demo`, ouvrir la page avec `?demo=1`, injecter `scripts/mesure-vue.js` dans la page (console du navigateur, ou `boite browser eval`), puis `__mesure.start({passes: 3})` et `__mesure.get()` : images par seconde, pire image, temps de calcul et mémoire par image, en glisser, zoom, rotation et sur un étage ouvert, de jour et de nuit. Budget : au moins 60 images par seconde (`docs/vue-immeuble.md`).
+Vue pixel : avec `BUREAU_DEMO=gros bun run demo`, fenêtre 1280 x 800, ouvrir la page avec `?demo=1`, injecter `scripts/mesure-pixel.js` (`boite browser eval "$(cat scripts/mesure-pixel.js)"`), puis `__mesurePixel.start({passes: 3})` et `__mesurePixel.get()`. Mesures : vue d'étage de jour et de nuit, défilement d'un étage au suivant, vue avancée, plan technique ; images par seconde, pire image, temps de calcul et mémoire par image, médiane de 3 passages. Budget et tableau : `docs/vue-pixel.md`, section 2.12 et section 3.
+
+Vue isométrique (gardée) : `scripts/mesure-vue.js`, avec `__mesure.start({passes: 3})` et `__mesure.get()`, budget dans `docs/vue-immeuble.md`.
 
 ## Livrer
 

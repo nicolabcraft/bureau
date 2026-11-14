@@ -2,6 +2,26 @@
 
 Chaque version publiée sur GitHub reprend sa section de ce fichier, suivie du tuto d'installation complet.
 
+## 0.2.0
+
+### La vue : l'immeuble vu de dessus
+- Vue en pixel art, qui remplace la vue isométrique : les étages sont empilés, chacun est un plan vu de dessus. Un étage par projet Boite ; les conversations sans projet occupent le rez-de-chaussée.
+- Chaque étage a son escalier et son ascenseur visibles, sa cafétéria et ses sanitaires. Un agent qui change de projet prend l'ascenseur ou l'escalier jusqu'à son nouvel étage.
+- Chaque agent est un personnage à son poste : il tape, lève la main quand il attend ta réponse, fait une pause quand il est au repos, rend son dossier à son responsable quand il a fini.
+- Les agents qui se parlent ont des bulles. Un clic sur une bulle ouvre une boîte de dialogue avec les deux portraits et « Ouvrir la conversation ».
+- Un nouveau projet fait construire son étage (grue, dalle, murs, mobilier) ; une nouvelle équipe fait construire sa zone. Un projet sans conversation pendant 20 secondes voit son étage démoli.
+- Éclairage selon l'heure réelle : jour, soir, nuit.
+- Barre d'étages à droite, zoom, défilement entre étages, clavier (PageHaut, PageBas, Début, Fin, flèches, + et -, 0, Échap). Sur téléphone, la barre devient une bande en bas : Escalier, Étage, Ascenseur.
+- « Qui m'attend », fiche d'un agent, plan de mission et « Valider le plan » gardent leur place dans l'en-tête.
+- Au moins 60 images par seconde en vue d'étage, de jour comme de nuit, avec 5 étages et 40 agents (mesure de la démo, fenêtre 1280 x 800).
+- La vue isométrique reste dans le dépôt, sans être servie.
+
+### Vue avancée
+- Bouton « Vue avancée » : une coupe de l'immeuble, chaque étage en bande, avec la cage de l'ascenseur et la grue pendant un chantier.
+- Les délégations et les rapports partent en capsules, de l'agent qui délègue vers celui qui reçoit.
+- Journal des échanges à droite, avec les onglets Tout, Travail, Papotage et Alertes. Survoler une ligne met en évidence ses deux agents ; un clic amène la vue sur l'agent.
+- Bouton « Plan technique » : l'arbre de délégation de bureau en bureau, avec le modèle sous chaque bureau.
+
 ## 0.1.0
 
 Première version publique.
