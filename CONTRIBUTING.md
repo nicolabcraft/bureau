@@ -22,7 +22,7 @@ bun run demo
 
 Le vrai service tourne contre un faux core qui fait vivre une équipe réaliste. La commande affiche l'adresse à ouvrir dans un navigateur (dans Boite : `boite browse <adresse>`). Aucune installation de Boite n'est nécessaire.
 
-Pour essayer le plugin dans Boite, depuis un terminal (pas depuis un agent) : `boite plugin dev .`.
+Pour essayer le plugin dans Boite, depuis un terminal (pas depuis un agent) : `boite plugin dev <chemin absolu du dossier>`.
 
 ## Vérifier avant d'envoyer
 
