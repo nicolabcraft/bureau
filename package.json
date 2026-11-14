@@ -13,7 +13,7 @@
     "demo": "bun scripts/demo.ts"
   },
   "devDependencies": {
-    "@types/bun": "1.4.2",
+    "@types/bun": "1.4.4",
     "typescript": "^6.0.3"
   }
 }
