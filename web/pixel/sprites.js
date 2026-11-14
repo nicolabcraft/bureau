@@ -327,6 +327,9 @@ function sprOutline(fill, look) {
 
 /* ------------------------------------- sheets ------------------------------------- */
 
+/** The variants of a sheet besides the plain one; anything else (null included) is the plain sheet. */
+const sprVariants = ['amber', 'red', 'done'];
+
 const sprSheets = new WeakMap(); // Look -> { base, amber, red, done } canvases
 const sprMirrors = new WeakMap(); // sheet -> mirrored sheet
 
@@ -337,7 +340,8 @@ const sprMirrors = new WeakMap(); // sheet -> mirrored sheet
 function bakeSheet(look, variant) {
   let byVariant = sprSheets.get(look);
   if (!byVariant) { byVariant = {}; sprSheets.set(look, byVariant); }
-  const v = variant === 'amber' || variant === 'red' || variant === 'done' ? variant : '';
+  const name = String(variant);
+  const v = sprVariants.indexOf(name) >= 0 ? name : '';
   const key = v || 'base';
   if (byVariant[key]) return byVariant[key];
   const w = sprW * FRAME.count;

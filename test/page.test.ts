@@ -5,7 +5,7 @@ import { assemblePage, PIXEL_FILES, readIsoPage, readPage, SCENE_FILES, SCRIPTS_
 
 const root = join(import.meta.dir, '..');
 const read = (path: string) => readFileSync(join(root, path), 'utf8');
-const scriptsOf = (html: string) => [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((match) => match[1]!);
+const scriptsOf = (html: string) => [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script\s*>/gi)].map((match) => match[1]!);
 
 /* Size of the assembled pixel page at L8: about 523 Ko (noted, no hard threshold). */
 

@@ -158,7 +158,7 @@ function advBuildFloor(lay, fl, inf, i) {
   };
   // head: chef offices and the board, or the bench and the reception of a floor without a chef
   lf.hasChef = inf.offices.length > 0;
-  let x = ix + 6;
+  let x;
   if (lf.hasChef) {
     inf.offices.forEach((o, k) => {
       const ox = ix + 6 + k * 52;
