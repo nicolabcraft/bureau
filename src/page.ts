@@ -1,14 +1,16 @@
 /*
- * Builds the page the service serves: web/index.html with the scene modules of
- * web/immeuble/ and the app glue web/app.js inlined, so the plugin stays one file.
+ * Builds the page the service serves, so the plugin stays one file.
+ * `readPage` is the pixel view: web/pixel/shell.html with the modules of web/pixel/ (PIXEL_FILES) and the
+ * app glue web/pixel/app.js inlined. `readIsoPage` is the isometric view (web/index.html, web/immeuble/,
+ * web/app.js): kept in the repository and tested, no longer served.
  * src/main.ts calls `readPage` as a Bun macro: the page is read once, at bundle time.
  * scripts/demo.ts calls it at run time, on every request, to pick up edits.
- * See docs/vue-immeuble.md for what each module owns.
+ * See docs/vue-pixel.md (pixel view) and docs/vue-immeuble.md (isometric view) for what each module owns.
  */
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-/** Scene modules, in load order. They share one scope: one function wraps them all. */
+/** Scene modules of the isometric view, in load order. They share one scope: one function wraps them all. */
 export const SCENE_FILES = [
   'noyau.js',
   'lumiere.js',
@@ -24,6 +26,32 @@ export const SCENE_FILES = [
   'boucle.js',
 ] as const;
 
+/** Modules of the pixel view, in load order (docs/vue-pixel.md 2.2). One shared scope, like SCENE_FILES. */
+export const PIXEL_FILES = [
+  'palette.js',
+  'font.js',
+  'engine.js',
+  'floorplan.js',
+  'floor.js',
+  'sprites.js',
+  'actions.js',
+  'people.js',
+  'sky.js',
+  'build.js',
+  'dialogues.js',
+  'talk.js',
+  'dialog.js',
+  'nav.js',
+  'facade.js',
+  'input.js',
+  'ui.js',
+  'advanced.js',
+  'tubes.js',
+  'journal.js',
+  'techplan.js',
+  'boot.js',
+] as const;
+
 export const SCRIPTS_MARK = '<!-- scripts -->';
 
 /** Puts the scene (one strict function scope) then the app glue in place of the mark. */
@@ -37,10 +65,21 @@ export function assemblePage(shell: string, scene: { name: string; text: string 
   return shell.replace(SCRIPTS_MARK, () => scripts);
 }
 
-/** Reads the sources from the repository and assembles the page. */
+/** A source file of the repository, with LF line endings whatever the checkout did. */
+function readSource(path: string): string {
+  return readFileSync(join(import.meta.dir, '..', path), 'utf8').split('\r\n').join('\n');
+}
+
+/** Reads the sources from the repository and assembles the pixel view. */
 export function readPage(): string {
-  const root = join(import.meta.dir, '..');
-  const read = (path: string): string => readFileSync(join(root, path), 'utf8').replace(/\r\n/g, '\n');
+  const read = readSource;
+  const scene = PIXEL_FILES.map((name) => ({ name, text: read(`web/pixel/${name}`) }));
+  return assemblePage(read('web/pixel/shell.html'), scene, read('web/pixel/app.js'));
+}
+
+/** Reads the sources and assembles the isometric view (not served any more, still tested). */
+export function readIsoPage(): string {
+  const read = readSource;
   const scene = SCENE_FILES.map((name) => ({ name, text: read(`web/immeuble/${name}`) }));
   return assemblePage(read('web/index.html'), scene, read('web/app.js'));
 }
