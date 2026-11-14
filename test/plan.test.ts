@@ -423,7 +423,7 @@ return {applyOffice, agentInfo, floorOfAgent, finishFloor, floorDemolished};`)(.
     },
   };
 }
-const full = (teams: Team[], extra: Record<string, unknown> = {}) => ({ ...office(teams, PROJECTS), core: 'connected', waitingCount: 0, generatedAt: 0, archives: [], ...extra });
+const full = (teams: Team[], extra: Record<string, unknown> = {}) => ({ ...office(teams, PROJECTS), core: 'connected', waitingCount: 0, generatedAt: 0, archives: [], events: [], ...extra });
 const agentsOf = (state: { teams: Team[] }) => state.teams.flatMap((t) => t.agents);
 
 describe('applyOffice', () => {

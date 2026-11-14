@@ -3,7 +3,7 @@
  * registry in, a state out, no clock and no I/O, so tests feed it plain data.
  */
 import type { ProjectRow, ThreadRow } from './core-types';
-import type { AgentState, ArchiveNote, OfficeAgent, OfficeState, Mission, ProjectInfo, Report, Role, Team } from './model';
+import type { AgentState, ArchiveNote, OfficeAgent, OfficeEvent, OfficeState, Mission, ProjectInfo, Report, Role, Team } from './model';
 import type { Registry } from './registry';
 
 export interface StateInput {
@@ -14,8 +14,10 @@ export interface StateInput {
   now: number;
   /** Keep only live teams (the view); commands see every team. */
   live?: boolean;
-  /** Recent archivings, for . */
+  /** Recent archivings, for the view. */
   archives?: ArchiveNote[];
+  /** Recent events (see src/events.ts); empty by default. */
+  events?: OfficeEvent[];
 }
 
 /** A quiet team stays in the office for a day after its last change. */
@@ -235,5 +237,5 @@ export function buildState(input: StateInput): OfficeState {
     input.now - team.lastActivity < ACTIVE_WINDOW_MS;
   if (input.live === true) teams.splice(0, teams.length, ...teams.filter(isLive).slice(0, MAX_TEAMS));
   const waitingCount = teams.reduce((sum, team) => sum + team.agents.filter((agent) => agent.state === 'waiting').length, 0);
-  return { teams, projects, waitingCount, core: input.core, generatedAt: input.now, archives: input.archives ?? [] };
+  return { teams, projects, waitingCount, core: input.core, generatedAt: input.now, archives: input.archives ?? [], events: input.events ?? [] };
 }

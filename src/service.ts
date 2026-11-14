@@ -8,8 +8,9 @@ import { join } from 'node:path';
 import type { ProjectRow, ThreadRow } from './core-types';
 import { CoreClient, RpcError } from './rpc';
 import { buildState } from './state';
+import { deriveEvents, recentEvents } from './events';
 import { appendJournal, coreArchiver, readJournal, readSettings, recentNotes, runArchivePass, trimJournal, type Archiver, type JournalEntry, type PassResult } from './archive';
-import type { OfficeState } from './model';
+import type { OfficeEvent, OfficeState } from './model';
 import { markValidated, parseRegistry, readRegistryText, REGISTRY_FILE, RegistryError, updateRegistry, validationPrompt, emptyRegistry, type Notice, type Registry } from './registry';
 
 export const DEFAULT_PORT = 47317;
@@ -88,7 +89,26 @@ export async function startService(options: ServiceOptions): Promise<Service> {
 
   let archiveNotes = recentNotes(readJournal(dataDir, 100), Date.now());
   const snapshot = (): OfficeState =>
-    buildState({ threads: threads.values(), projects, registry, core: coreStatus, now: Date.now(), live: true, archives: archiveNotes });
+    buildState({ threads: threads.values(), projects, registry, core: coreStatus, now: Date.now(), live: true, archives: archiveNotes, events: recentEvents(eventLog, Date.now()) });
+
+  // ---- Conversation events ---------------------------------------------------
+  /** The last state events were derived from. Null: the next state becomes the reference and emits nothing. */
+  let baseline: OfficeState | null = null;
+  let eventLog: OfficeEvent[] = [];
+  let advanceQueued = false;
+  /** Compares the current state with the baseline once per turn of the event loop, however many changes came. */
+  const advance = () => {
+    if (advanceQueued || stopped) return;
+    advanceQueued = true;
+    queueMicrotask(() => {
+      advanceQueued = false;
+      if (stopped || loading || coreStatus !== 'connected') return;
+      const now = Date.now();
+      const next = buildState({ threads: threads.values(), projects, registry, core: coreStatus, now, live: true, archives: archiveNotes, events: [] });
+      eventLog = deriveEvents(baseline, next, eventLog, now);
+      baseline = next;
+    });
+  };
 
   // ---- Server-sent events ----------------------------------------------------
   const encoder = new TextEncoder();
@@ -136,6 +156,7 @@ export async function startService(options: ServiceOptions): Promise<Service> {
       return false;
     }
     changed();
+    advance();
     void flushNotices();
     return true;
   };
@@ -209,6 +230,7 @@ export async function startService(options: ServiceOptions): Promise<Service> {
     if (loading) buffered.push(apply);
     else apply();
     changed();
+    advance();
   };
 
   async function loadAll(): Promise<void> {
@@ -224,6 +246,8 @@ export async function startService(options: ServiceOptions): Promise<Service> {
       // Events that arrived while the lists were on their way are newer than the lists.
       for (const apply of buffered) apply();
       coreStatus = 'connected';
+      // A reconnection starts a new history: no leaver or newcomer storm for what changed while away.
+      baseline = null;
       log(`connecté à Boite : ${rows.length} fils, ${projectRows.length} projets`);
     } catch (error) {
       log(`lecture des fils impossible : ${error instanceof Error ? error.message : String(error)}`);
@@ -234,6 +258,7 @@ export async function startService(options: ServiceOptions): Promise<Service> {
       buffered = [];
     }
     changed();
+    advance();
     void flushNotices();
   }
 
@@ -286,6 +311,7 @@ export async function startService(options: ServiceOptions): Promise<Service> {
       const next = state === 'connecting' && !everFailed ? 'connecting' : 'disconnected';
       if (next !== coreStatus) {
         coreStatus = next;
+        baseline = null;
         changed();
       }
     });
@@ -338,7 +364,10 @@ export async function startService(options: ServiceOptions): Promise<Service> {
           // A journal that cannot be trimmed is only bigger than wanted.
         }
         if (result.unavailable) log(`archivage : ${result.candidates.length} fil(s) à archiver, mais Boite n'ouvre pas encore threads.archive aux plugins.`);
-        if (result.archived.length > 0) changed();
+        if (result.archived.length > 0) {
+          changed();
+          advance();
+        }
       }
       return result;
     })();
