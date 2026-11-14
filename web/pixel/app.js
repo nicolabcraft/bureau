@@ -146,13 +146,13 @@ function renderDetail(){
   const et = ETAT[d.state] || {lib: d.state, col: '#59627A'};
   $('#dEtat').textContent = et.lib; $('#dPastille').style.background = et.col;
   const since = sinceOf(d);
-  $('#dDepuis').innerHTML = '<span data-since="' + since + '">' + esc(fmtSince(Date.now() - since)) + '</span>';
+  $('#dDepuis').innerHTML = '<span data-since="' + Number(since) + '">' + esc(fmtSince(Date.now() - since)) + '</span>';
   const waiting = d.state === 'waiting';
   $('#dQuestion').hidden = !waiting;
   if(waiting) $('#dQuestionTexte').textContent = d.waitingFor === 'permission' ? 'Une autorisation : il demande si tu l’accordes.' : 'Une réponse : il te pose une question.';
   $('#dFichiers').innerHTML = d.files && d.files.length ? d.files.map((f) => '<li>' + esc(f) + '</li>').join('') : '<li>Aucun fichier attribué</li>';
   $('#dRapport').innerHTML = d.report && d.report.text
-    ? '<div class="rapport" tabindex="0" role="region" aria-label="Dernier rapport">' + esc(d.report.text) + '</div><small>Déposé <span data-since="' + d.report.at + '" data-ilya="1">' + esc(ilya(d.report.at)) + '</span></small>'
+    ? '<div class="rapport" tabindex="0" role="region" aria-label="Dernier rapport">' + esc(d.report.text) + '</div><small>Déposé <span data-since="' + Number(d.report.at) + '" data-ilya="1">' + esc(ilya(d.report.at)) + '</span></small>'
     : 'Aucun rapport déposé';
   $('#bRep').hidden = !waiting;
   const stoppable = d.state === 'running' || d.state === 'queued' || waiting;
@@ -172,7 +172,7 @@ function renderList(){
     btn.className = 'ligne-liste'; btn.type = 'button'; btn.dataset.id = it.d.id;
     const what = it.d.waitingFor === 'permission' ? 'Attend une autorisation' : 'Te pose une question';
     const since = sinceOf(it.d);
-    btn.innerHTML = '<b>' + esc(it.d.title || 'Sans titre') + '</b><span>' + esc(what) + '</span><small>' + esc(projectLabel(it.team) + ', ') + '<span data-since="' + since + '">' + esc(fmtSince(Date.now() - since)) + '</span></small>';
+    btn.innerHTML = '<b>' + esc(it.d.title || 'Sans titre') + '</b><span>' + esc(what) + '</span><small>' + esc(projectLabel(it.team) + ', ') + '<span data-since="' + Number(since) + '">' + esc(fmtSince(Date.now() - since)) + '</span></small>';
     b.appendChild(btn);
   }
 }

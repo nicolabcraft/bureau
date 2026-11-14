@@ -11,6 +11,9 @@
    - LIFT.x: plan x of the cab centre. LIFT.y: world y of the FEET of a rider when the cab is level with a landing (liftStopY). people.js owns
      y, fl, moving, dir, owner and want; floor.js only eases LIFT.door towards LIFT.want (0 closed, 1 open).
    - floorGone moves floorCam.y by -BLOCK (the floors below move up) and flrTakeShift() hands the sum to nav.js, which adds it to NAV.ty.
+   - A building change (a floor added or demolished) moves every floorTop. syncFloors and floorGone only re-seat LIFT.y when the cab is idle with no owner;
+     the trips in progress are people.js business: it re-reads floorTop and liftStopY from FLOORS at each step (agreed with L4), so a rider or the cab
+     in motion is re-seated there, and floor.js leaves p.wy and LIFT.y alone while LIFT.owner is set or LIFT.moving is true.
    - Persons in the towers and the waiting ones under the veil are drawn with pplDraw(g, p, x, y, T) (people.js); the filter is the boolean pplWaitFilter. */
 
 const FLOORS = [];                               // Floor[], index 0 = ground floor
@@ -96,9 +99,15 @@ function flrPictoMan(g, x, y, c) { rect(g, x + 2, y, 3, 3, c); rect(g, x + 1, y 
 function flrPictoWoman(g, x, y, c) { rect(g, x + 2, y, 3, 3, c); rect(g, x + 2, y + 3, 3, 2, c); rect(g, x + 1, y + 5, 5, 3, c); rect(g, x, y + 8, 7, 2, c); rect(g, x + 1, y + 10, 2, 2, c); rect(g, x + 4, y + 10, 2, 2, c); }
 
 function flrService(colorKey) { return flrServices[colorKey] || flrServices.misc; }
+const flrGeos = new WeakMap();
 function flrGeo(plan) {
-  const W = plan.width, dx = Math.round((W * 0.4) / 8) * 8;
-  return { W, cafeX1: W - 120, dx, lampX: dx + 62, ey: 336, cb: 272 };
+  let geo = flrGeos.get(plan);
+  if (geo === undefined) {
+    const W = plan.width, dx = Math.round((W * 0.4) / 8) * 8;
+    geo = { W, cafeX1: W - 120, dx, lampX: dx + 62, ey: 336, cb: 272 };
+    flrGeos.set(plan, geo);
+  }
+  return geo;
 }
 function flrFurn(plan, kind) { return plan.furniture.filter((f) => f.kind === kind); }
 
@@ -415,6 +424,10 @@ function flrTowers() {
   return flrTowerCache;
 }
 
+let flrCamX = 0, flrCamY = 0;
+function flrWx(v) { return Math.round(v - flrCamX); }
+function flrWy(v) { return Math.round(v - flrCamY); }
+
 function flrDrawTowers(g, cam, T) {
   const n = FLOORS.length;
   if (!n) return;
@@ -424,18 +437,19 @@ function flrDrawTowers(g, cam, T) {
   g.drawImage(tw.L, 0, sy0, STAIRS_W, sy1 - sy0, -cam.x, sy0 - cam.y, STAIRS_W, sy1 - sy0);
   g.drawImage(tw.R, 0, sy0, LIFT_W, sy1 - sy0, rx - cam.x, sy0 - cam.y, LIFT_W, sy1 - sy0);
   // cab: cables, closed landing doors, roof, back wall, rail, floor, door leaf; the riders stand inside
-  const X = (v) => Math.round(v - cam.x), Y = (v) => Math.round(v - cam.y), lx = rx;
+  flrCamX = cam.x; flrCamY = cam.y;
+  const lx = rx;
   const top = floorTop(n - 1, n) + 24, cabTop = LIFT.y - 33;
-  rect(g, X(lx + 17), Y(top), 1, Math.round(cabTop - top), 'steelD'); rect(g, X(lx + 19), Y(top), 1, Math.round(cabTop - top), 'steelD');
+  rect(g, flrWx(lx + 17), flrWy(top), 1, Math.round(cabTop - top), 'steelD'); rect(g, flrWx(lx + 19), flrWy(top), 1, Math.round(cabTop - top), 'steelD');
   for (let i = 0; i < n; i++) {
     const stop = liftStopY(i);
     if (stop + 1 < cam.y || stop - 60 > cam.y + cam.bh) continue;
     const open = LIFT.fl === i && !LIFT.moving ? LIFT.door : 0, h = Math.round((1 - open) * 34);
-    if (h > 0) { rect(g, X(lx), Y(stop - 33), 3, h, 'steelL'); rect(g, X(lx), Y(stop - 33), 1, h, 'white'); rect(g, X(lx + 2), Y(stop - 33), 1, h, 'steelD'); }
+    if (h > 0) { rect(g, flrWx(lx), flrWy(stop - 33), 3, h, 'steelL'); rect(g, flrWx(lx), flrWy(stop - 33), 1, h, 'white'); rect(g, flrWx(lx + 2), flrWy(stop - 33), 1, h, 'steelD'); }
     const lit = LIFT.fl === i && !LIFT.moving && LIFT.door > 0.5;
-    rect(g, X(lx + 22), Y(stop - 49), 3, 3, lit ? 'lampHi' : 'steelD'); rect(g, X(lx + 26), Y(stop - 49), 3, 3, LIFT.moving && LIFT.dir < 0 ? 'lamp' : 'steelD');
+    rect(g, flrWx(lx + 22), flrWy(stop - 49), 3, 3, lit ? 'lampHi' : 'steelD'); rect(g, flrWx(lx + 26), flrWy(stop - 49), 3, 3, LIFT.moving && LIFT.dir < 0 ? 'lamp' : 'steelD');
   }
-  const cx0 = X(lx + 5), cy0 = Y(cabTop);
+  const cx0 = flrWx(lx + 5), cy0 = flrWy(cabTop);
   rect(g, cx0 - 1, cy0 - 1, 28, 36, 'ink'); rect(g, cx0, cy0, 26, 34, 'steelL'); rect(g, cx0, cy0, 26, 3, 'steel'); rect(g, cx0 + 1, cy0 + 3, 24, 28, 'steelD'); rect(g, cx0 + 1, cy0 + 3, 24, 2, 'lampHi');
   for (let x = cx0 + 8; x < cx0 + 25; x += 8) rect(g, x, cy0 + 6, 1, 25, 'steel');
   rect(g, cx0 + 2, cy0 + 20, 22, 1, 'steelL'); rect(g, cx0, cy0 + 31, 26, 3, 'woodD'); rect(g, cx0, cy0 + 31, 26, 1, 'wood');
@@ -468,7 +482,8 @@ function flrDrawDesk(g, fl, d, T) {
   const st = on && occ.info ? occ.info.state : null;
   rect(g, x + 3, y + 12, w, 2, 'ink');                                                              // shadow on the floor
   rect(g, x, y, w, 8, 'wood'); rect(g, x, y, w, 1, 'woodL'); rect(g, x, y + 1, w, 1, 'parqA'); rect(g, x + w - 1, y, 1, 8, 'woodD');
-  for (let k = 0; k < 5; k++) { const hh = hash('gr' + x + y + k); rect(g, x + 2 + (hh % (w - 12)), y + 2 + ((hh >>> 8) % 5), 6 + (hh % 5), 1, 'woodL'); }   // grain
+  const gr = d.grain;   // wood grain: five strokes (x, y, width) worked out once in flrBuildPieces
+  for (let k = 0; k < 15; k += 3) rect(g, x + gr[k], y + gr[k + 1], gr[k + 2], 1, 'woodL');
   rect(g, x, y + 8, w, 4, 'woodD'); rect(g, x, y + 8, w, 1, 'wood'); rect(g, x + 1, y + 11, w - 2, 1, 'ink');                  // front panel
   rect(g, x + 3, y + 9, 14, 3, 'wood'); rect(g, x + 3, y + 9, 14, 1, 'woodL'); rect(g, x + 9, y + 10, 3, 1, 'lamp');
   rect(g, x + w - 17, y + 9, 14, 3, 'wood'); rect(g, x + w - 17, y + 9, 14, 1, 'woodL'); rect(g, x + w - 11, y + 10, 3, 1, 'lamp');
@@ -486,7 +501,7 @@ function flrDrawDesk(g, fl, d, T) {
   if (sc) {
     rect(g, cx - 8, y - 4, 16, 1, sc); rect(g, cx + 6, y + 3, 1, 1, 'screen');
     const fy = y + 4;   // light of the screen on the face of the person behind it
-    for (const dx of [-3, 2]) for (const dy of [-11, -9]) rect(g, cx + dx, fy + dy, 1, 1, sc);
+    rect(g, cx - 3, fy - 11, 1, 1, sc); rect(g, cx - 3, fy - 9, 1, 1, sc); rect(g, cx + 2, fy - 11, 1, 1, sc); rect(g, cx + 2, fy - 9, 1, 1, sc);
     rect(g, cx - 1, fy - 7, 1, 1, sc); rect(g, cx + 1, fy - 7, 1, 1, sc);
   }
   if (on && occ.pose === 'type' && st === 'running') {
@@ -511,6 +526,8 @@ function flrBuildPieces(fl) {
   const geo = flrGeo(plan);
   for (const d of plan.desks) {
     d.lamp = d.where.indexOf('office:') === 0 || d.id.endsWith('#0') || hash('lamp' + d.id) % 2 === 0;
+    d.grain = new Int16Array(15);   // wood grain of the top: x, y, width of five strokes (the draw loop makes no string)
+    for (let k = 0; k < 5; k++) { const hh = hash('gr' + d.x + d.y + k); d.grain[k * 3] = 2 + (hh % (d.w - 12)); d.grain[k * 3 + 1] = 2 + ((hh >>> 8) % 5); d.grain[k * 3 + 2] = 6 + (hh % 5); }
     flrPiece(list, d.y + 12, d.x, d.y - 6, d.w, 42, (g, T) => flrDrawDesk(g, fl, d, T));
     flrPiece(list, d.y + 2, d.x + 12, d.y - 15, 16, 16, (g) => flrChair(g, Math.round(d.x + d.w / 2), d.y));
   }
@@ -825,25 +842,35 @@ function renderBuilding(g, tg, cam, T) {
 
 /* ------------------------------ labels (crisp layer) ------------------------------ */
 
-const flrLabels = new Map();
-const flrWraps = new Map();
+// The label caches are nested Maps (text, then colour or width): a lookup builds no key string, so a frame allocates none.
+const flrLabels = new Map();   // text -> colour -> [image of each text factor]
+const flrFits = new Map();     // text -> width -> fitted text
+const flrWraps = new Map();    // text -> (width * 4 + lines) -> lines
+let flrLabelN = 0, flrFitN = 0, flrWrapN = 0;
 const flrRects = [];       // the label boxes of the last frame, device px: tests read them to check that no two overlap
 let flrRectCount = 0;
-function flrLabelBoxes() { return flrRects.slice(0, flrRectCount); }
 
 /** Text image: bitmap font scaled by a whole factor, with a one pixel shadow unless the colour is ink. */
 function flrLabel(text, colour, tf) {
-  const key = text + '|' + colour + '|' + tf;
-  let c = flrLabels.get(key);
-  if (c) return c;
+  let byColour = flrLabels.get(text);
+  if (byColour === undefined) { byColour = new Map(); flrLabels.set(text, byColour); }
+  let byTf = byColour.get(colour);
+  if (byTf === undefined) { byTf = []; byColour.set(colour, byTf); }
+  const hit = byTf[tf];
+  if (hit !== undefined) return hit;
   const w = Math.max(1, textWidth(text));
   const small = makeBuffer(w, FONT_H + 1);
   if (colour !== 'ink') drawText(small.g, text, 0, 1, 'ink');
   drawText(small.g, text, 0, 0, colour);
   const big = makeBuffer(w * tf, (FONT_H + 1) * tf);
   big.g.drawImage(small.c, 0, 0, w, FONT_H + 1, 0, 0, w * tf, (FONT_H + 1) * tf);
-  if (flrLabels.size >= flrLabelMax) flrLabels.clear();
-  flrLabels.set(key, big.c);
+  if (flrLabelN >= flrLabelMax) {
+    flrLabels.clear(); flrLabelN = 0;
+    byColour = new Map(); flrLabels.set(text, byColour);
+    byTf = []; byColour.set(colour, byTf);
+  }
+  byTf[tf] = big.c;
+  flrLabelN++;
   return big.c;
 }
 
@@ -851,20 +878,34 @@ const flrDots = '...';
 
 /** The text if it fits maxW (font px); else its longest start followed by dots; '' when not even the dots fit. A word is never cut without the dots. */
 function flrFit(text, maxW) {
-  if (textWidth(text) <= maxW) return text;
-  const dots = textWidth(flrDots);
-  if (dots > maxW) return '';
-  let s = text;
-  while (s.length > 0 && textWidth(s + flrDots) > maxW) s = s.slice(0, -1);
-  s = s.replace(/[\s,.:;!?(\/+-]+$/, '');
-  return s + flrDots;
+  let byW = flrFits.get(text);
+  if (byW === undefined) { byW = new Map(); flrFits.set(text, byW); }
+  const hit = byW.get(maxW);
+  if (hit !== undefined) return hit;
+  let r;
+  if (textWidth(text) <= maxW) r = text;
+  else if (textWidth(flrDots) > maxW) r = '';
+  else {
+    let t = text;
+    while (t.length > 0 && textWidth(t + flrDots) > maxW) t = t.slice(0, -1);
+    r = t.replace(/[\s,.:;!?(\/+-]+$/, '') + flrDots;
+  }
+  if (flrFitN >= flrLabelMax) {
+    flrFits.clear(); flrFitN = 0;
+    byW = new Map(); flrFits.set(text, byW);
+  }
+  byW.set(maxW, r);
+  flrFitN++;
+  return r;
 }
 
-/** At most n lines of maxW font px: wrapped at spaces, a word wider than a line or a rest that does not fit ends in dots. */
+/** At most n lines (1 to 3) of maxW font px: wrapped at spaces, a word wider than a line or a rest that does not fit ends in dots. */
 function flrLines(text, maxW, n) {
-  const key = text + '|' + maxW + '|' + n;
-  let r = flrWraps.get(key);
-  if (r) return r;
+  let byKey = flrWraps.get(text);
+  if (byKey === undefined) { byKey = new Map(); flrWraps.set(text, byKey); }
+  const key = maxW * 4 + n;
+  let r = byKey.get(key);
+  if (r !== undefined) return r;
   if (n < 1) r = [];
   else {
     const lines = wrapText(text, maxW);
@@ -873,8 +914,12 @@ function flrLines(text, maxW, n) {
       : lines.slice(0, n - 1).map((l) => flrFit(l, maxW)).concat([flrFit(lines.slice(n - 1).join(' '), maxW)]);
     r = r.filter((l) => l !== '');
   }
-  if (flrWraps.size >= flrLabelMax) flrWraps.clear();
-  flrWraps.set(key, r);
+  if (flrWrapN >= flrLabelMax) {
+    flrWraps.clear(); flrWrapN = 0;
+    byKey = new Map(); flrWraps.set(text, byKey);
+  }
+  byKey.set(key, r);
+  flrWrapN++;
   return r;
 }
 
@@ -963,9 +1008,20 @@ function flrPutBlock(tg, ctx, lines, colour, plate, tf, cx, y, bubbles) {
   return bw;
 }
 
+/** The second text of a floor plate; rebuilt only when the name or the building state changes. */
+function flrPlateText(other) {
+  const pending = other.p < 1;
+  if (other.plateName !== other.name || other.platePending !== pending) {
+    other.plateName = other.name; other.platePending = pending;
+    other.plateText = other.name + (pending ? ', en chantier' : '');
+  }
+  return other.plateText;
+}
+function flrCapTop(topDev, h, f) { return topDev + Math.round((h - 7 * f) / 2) - 2 * f; }
+
 function flrPlate(tg, cam, z, tf, other, topDev) {
   const h = 12 * z, f2 = FONT_H * tf * 2 <= h ? tf * 2 : tf;   // the title is twice as big when the plate is tall enough
-  const t1 = other.title, t2 = other.name + (other.p < 1 ? ', en chantier' : '');
+  const t1 = other.title, t2 = flrPlateText(other);
   const w1 = textWidth(t1) * f2, w2 = textWidth(t2) * tf, stripe = Math.max(2, Math.round(1.5 * z)), pad = Math.round(3 * z);
   const pw = stripe + pad + w1 + 6 * tf + w2 + pad;
   const plateW = other.plan ? other.plan.width : flrNoPlan.width;
@@ -973,11 +1029,21 @@ function flrPlate(tg, cam, z, tf, other, topDev) {
   const x0 = Math.round((STAIRS_W + lx - cam.x) * z);
   tg.fillStyle = palColor('ink'); tg.fillRect(x0, topDev, pw, h);
   tg.fillStyle = palColor(other.p < 1 ? 'lamp' : other.index === 0 ? 'screen' : 'lamp'); tg.fillRect(x0, topDev, stripe, h);
-  const capTop = (f) => topDev + Math.round((h - 7 * f) / 2) - 2 * f;
   const x1 = x0 + stripe + pad;
-  tg.drawImage(flrLabel(t1, 'lampHi', f2), x1, capTop(f2));
-  tg.drawImage(flrLabel(t2, 'steelL', tf), x1 + w1 + 6 * tf, capTop(tf));
+  tg.drawImage(flrLabel(t1, 'lampHi', f2), x1, flrCapTop(topDev, h, f2));
+  tg.drawImage(flrLabel(t2, 'steelL', tf), x1 + w1 + 6 * tf, flrCapTop(topDev, h, tf));
   flrRecord(x0, topDev, pw, h, null);
+}
+
+const flrLineBuf = [];   // the lines of one label block (scratch, reused)
+function flrX(px) { return flrCtx.ox + Math.round(px * flrCtx.z); }
+function flrY(py) { return flrCtx.oy + Math.round(py * flrCtx.z); }
+/** flrFit for a width given in logical px, at the zoom and text factor of the frame. */
+function flrFitZ(text, logical) { return flrFit(text, Math.floor((logical * flrCtx.z) / flrCtx.tf)); }
+function flrServiceOf(fl, rm) {
+  const rooms = fl.spec.rooms;
+  for (let i = 0; i < rooms.length; i++) if (rooms[i].key === rm.key && rooms[i].service) return rooms[i].service;
+  return rm.title;
 }
 
 function drawFloorLabels(tg, fl, cam, T) {
@@ -986,30 +1052,32 @@ function drawFloorLabels(tg, fl, cam, T) {
   ctx.cam = cam; ctx.z = z; ctx.tf = tf;
   ctx.ox = Math.round((STAIRS_W - cam.x) * z);
   ctx.oy = Math.round((fl.y + fl.dy - cam.y) * z);
-  const ox = ctx.ox, oy = ctx.oy, plan = fl.plan;
+  const plan = fl.plan;
   // name plate of the floor below, on this slab; the top floor also carries its own, in the sky above it
-  if (fl.index > 0) flrPlate(tg, cam, z, tf, FLOORS[fl.index - 1], oy + (PLATE_H + 2) * z);
-  if (fl.index === FLOORS.length - 1) flrPlate(tg, cam, z, tf, fl, oy - 14 * z);
+  if (fl.index > 0) flrPlate(tg, cam, z, tf, FLOORS[fl.index - 1], ctx.oy + (PLATE_H + 2) * z);
+  if (fl.index === FLOORS.length - 1) flrPlate(tg, cam, z, tf, fl, ctx.oy - 14 * z);
   if (fl.p < 1) return;
   const bubbles = bubbleRects(fl);
-  const X = (px) => ox + Math.round(px * z), Y = (py) => oy + Math.round(py * z);
   const lineH = (FONT_H + 1) * tf;
+  const lines = flrLineBuf;
   // A label is wrapped and cut (with dots) to the width of its container in device px, then centred in it; a container too short for
-  // a line gets fewer lines.
+  // a line gets fewer lines. Nothing here builds a string, an array or a closure once the caches are warm (2.12).
   // headers of the rooms: the service, then « Resp. : title » on up to two lines
   for (const rm of plan.rooms) {
     const h = rm.header, avail = Math.floor(((h.w - 4) * z) / tf);
-    const room = fl.spec.rooms.find((r) => r.key === rm.key), service = (room && room.service) || rm.title;
-    const cap = Math.max(1, Math.floor((22 * z) / lineH)), lines = [flrFit(service, avail)];
-    if (cap > 1) for (const l of flrLines('Resp. : ' + rm.title, avail, Math.min(2, cap - 1))) lines.push(l);
-    const top = Y(h.y) + Math.round((22 * z - lines.length * lineH) / 2);
-    flrSetBox(X(h.x), Y(h.y), h.w * z, 22 * z);
-    lines.forEach((l, k) => flrPut(tg, ctx, l, k ? 'steelL' : 'wallHi', tf, X(h.x + 2), top + k * lineH, 'l', bubbles));
+    if (rm.resp === undefined) rm.resp = 'Resp. : ' + rm.title;   // the plan is rebuilt when a title changes
+    const cap = Math.max(1, Math.floor((22 * z) / lineH));
+    lines.length = 0;
+    lines.push(flrFit(flrServiceOf(fl, rm), avail));
+    if (cap > 1) { const rest = flrLines(rm.resp, avail, Math.min(2, cap - 1)); for (let k = 0; k < rest.length; k++) lines.push(rest[k]); }
+    const top = flrY(h.y) + Math.round((22 * z - lines.length * lineH) / 2);
+    flrSetBox(flrX(h.x), flrY(h.y), h.w * z, 22 * z);
+    for (let k = 0; k < lines.length; k++) flrPut(tg, ctx, lines[k], k ? 'steelL' : 'wallHi', tf, flrX(h.x + 2), top + k * lineH, 'l', bubbles);
   }
   if (plan.open.rect.w > 0) {
     const o = plan.open.rect, w = Math.min(o.w * 8, 92);
-    flrSetBox(X(o.x * 8), Y(74), w * z, 13 * z);
-    flrPut(tg, ctx, flrFit('Postes libres', Math.floor(((w - 6) * z) / tf)), 'wallHi', tf, X(o.x * 8 + 3), Y(74) + Math.round((13 * z - lineH) / 2), 'l', bubbles);
+    flrSetBox(flrX(o.x * 8), flrY(74), w * z, 13 * z);
+    flrPut(tg, ctx, flrFit('Postes libres', Math.floor(((w - 6) * z) / tf)), 'wallHi', tf, flrX(o.x * 8 + 3), flrY(74) + Math.round((13 * z - lineH) / 2), 'l', bubbles);
   }
   // names under the desks, in the colour of the state (dimmed while the person is away), in a column of 64 px
   const maxW = Math.floor((64 * z) / tf) - 4;   // the plate adds two pixels on each side
@@ -1017,31 +1085,31 @@ function drawFloorLabels(tg, fl, cam, T) {
     if (!d.ownerId || d.where.indexOf('office:') === 0) continue;   // the panel of the chef carries its name
     const a = fl.agents.get(d.ownerId), p = personById(d.ownerId), seated = !!(p && p.seated && p.present);
     if (!a) continue;
-    const colour = flrStateColour(a, seated), cx = X(d.x + d.w / 2);
-    flrSetBox(cx - 32 * z, Y(d.y + 14) - tf, 64 * z, 32 * z);
-    flrPutBlock(tg, ctx, flrLines(a.title, maxW, 2), colour, flrNamePlate(a), tf, cx, Y(d.y + 14), bubbles);
+    const colour = flrStateColour(a, seated), cx = flrX(d.x + d.w / 2);
+    flrSetBox(cx - 32 * z, flrY(d.y + 14) - tf, 64 * z, 32 * z);
+    flrPutBlock(tg, ctx, flrLines(a.title, maxW, 2), colour, flrNamePlate(a), tf, cx, flrY(d.y + 14), bubbles);
   }
   // panels of the chefs
   for (const o of plan.offices) {
     const sx = o.rect.x * 8 + 128, avail = Math.floor((80 * z) / tf);
-    const lines = flrLines(o.sign, avail, Math.max(1, Math.min(3, Math.floor((24 * z - 2) / lineH))));
-    const top = Y(32) + Math.round((24 * z - lines.length * lineH) / 2);
-    flrSetBox(X(sx), Y(32), 88 * z, 24 * z);
-    lines.forEach((l, k) => flrPut(tg, ctx, l, 'ink', tf, X(sx + 44), top + k * lineH, 'c', null));
+    const sign = flrLines(o.sign, avail, Math.max(1, Math.min(3, Math.floor((24 * z - 2) / lineH))));
+    const top = flrY(32) + Math.round((24 * z - sign.length * lineH) / 2);
+    flrSetBox(flrX(sx), flrY(32), 88 * z, 24 * z);
+    for (let k = 0; k < sign.length; k++) flrPut(tg, ctx, sign[k], 'ink', tf, flrX(sx + 44), top + k * lineH, 'c', null);
   }
   // fixed signs
-  const geo = flrGeo(plan), fit = (s, logical) => flrFit(s, Math.floor((logical * z) / tf));
-  flrSetBox(X(52), Y(geo.cb + 2), 46 * z, 12 * z);
-  flrPut(tg, ctx, fit('Cafétéria', 38), 'lampHi', tf, X(58), Y(geo.cb + 2) + Math.round((12 * z - lineH) / 2), 'l', null);
+  const geo = flrGeo(plan);
+  flrSetBox(flrX(52), flrY(geo.cb + 2), 46 * z, 12 * z);
+  flrPut(tg, ctx, flrFitZ('Cafétéria', 38), 'lampHi', tf, flrX(58), flrY(geo.cb + 2) + Math.round((12 * z - lineH) / 2), 'l', null);
   if (plan.id === '') {
-    flrSetBox(X(geo.dx - 52), Y(geo.ey + 2), 42 * z, 11 * z);
-    flrPut(tg, ctx, fit('Accueil', 37), 'screen', tf, X(geo.dx - 49), Y(geo.ey + 2) + Math.round((11 * z - lineH) / 2), 'l', null);
+    flrSetBox(flrX(geo.dx - 52), flrY(geo.ey + 2), 42 * z, 11 * z);
+    flrPut(tg, ctx, flrFitZ('Accueil', 37), 'screen', tf, flrX(geo.dx - 49), flrY(geo.ey + 2) + Math.round((11 * z - lineH) / 2), 'l', null);
   }
-  flrSetBox(X(geo.W - 112), Y(geo.cb + 26), 64 * z, lineH);
-  flrPut(tg, ctx, fit('Sanitaires', 64), 'ink', tf, X(geo.W - 80), Y(geo.cb + 26), 'c', null);
-  flrSetBox(X(8), Y(308), 100 * z, lineH);
-  flrPut(tg, ctx, fit('Escalier', 100), 'steelL', tf, X(10), Y(308), 'l', null);
-  flrSetBox(X(geo.W - 108), Y(308), 100 * z, lineH);
-  flrPut(tg, ctx, fit('Ascenseur', 96), 'ink', tf, X(geo.W - 10), Y(308), 'r', null);
+  flrSetBox(flrX(geo.W - 112), flrY(geo.cb + 26), 64 * z, lineH);
+  flrPut(tg, ctx, flrFitZ('Sanitaires', 64), 'ink', tf, flrX(geo.W - 80), flrY(geo.cb + 26), 'c', null);
+  flrSetBox(flrX(8), flrY(308), 100 * z, lineH);
+  flrPut(tg, ctx, flrFitZ('Escalier', 100), 'steelL', tf, flrX(10), flrY(308), 'l', null);
+  flrSetBox(flrX(geo.W - 108), flrY(308), 100 * z, lineH);
+  flrPut(tg, ctx, flrFitZ('Ascenseur', 96), 'ink', tf, flrX(geo.W - 10), flrY(308), 'r', null);
   flrNoBox();
 }

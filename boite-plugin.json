@@ -10,7 +10,7 @@
   "artifacts": {
     "any": {
       "url": "https://github.com/nicolabcraft/bureau/releases/download/v0.2.0/bureau.js",
-      "sha256": "b90fef1e1fa43beaed892aef00f9bc550fdcf5b48b9fce36ebaca88ea2da8632"
+      "sha256": "993d6c12c309a905e511d1ca1a80296d43ddfb49f30c10a075207dc6c9f02913"
     }
   },
   "permissions": [

@@ -97,6 +97,19 @@ function lookFor(id, role) {
   return look;
 }
 
+/**
+ * Forgets the looks of a thread that left (every role it was seen with): the Look objects go, and with them their
+ * sheets and mirrored sheets (WeakMaps keyed by Look and by sheet). Called by people.js when a person is removed;
+ * the same id coming back gets the same look again, since it only depends on hash(id).
+ */
+function sprForget(id) {
+  const roles = ['agent', 'manager', 'chef'];
+  const last = sprRoles.get(id);
+  if (last && roles.indexOf(last) < 0) roles.push(last);
+  for (let i = 0; i < roles.length; i++) sprLooks.delete(id + '|' + roles[i]);
+  sprRoles.delete(id);
+}
+
 /* ------------------------------------- frame drawing ------------------------------------- */
 
 /*
@@ -244,7 +257,8 @@ const sprH = SPRITE_H;
 /**
  * One frame as a palette name per cell (12 x 20, row by row, null = transparent), outline included.
  * The outline is selective: each outline cell takes a dark tone of the cell it touches, bottom and
- * right neighbours winning. The variants recolour the outline (amber, red) or fade the fill with a sparse light dither (done).
+ * right neighbours winning. variant is a string: '' (none), 'amber' and 'red' recolour the outline, 'done' fades the fill with a
+ * sparse light dither.
  */
 function sprFrame(look, spec, variant) {
   const dir = spec.dir;
@@ -318,19 +332,20 @@ const sprMirrors = new WeakMap(); // sheet -> mirrored sheet
 
 /**
  * Sheet of a look: FRAME.count frames of 12 x 20, baked on first use and kept per look and variant.
- * variant: null | 'amber' (waiting: amber outline) | 'red' (error: red outline) | 'done' (greyed).
+ * variant: null (or anything else) | 'amber' (waiting: amber outline) | 'red' (error: red outline) | 'done' (greyed).
  */
 function bakeSheet(look, variant) {
   let byVariant = sprSheets.get(look);
   if (!byVariant) { byVariant = {}; sprSheets.set(look, byVariant); }
-  const key = variant || 'base';
+  const v = variant === 'amber' || variant === 'red' || variant === 'done' ? variant : '';
+  const key = v || 'base';
   if (byVariant[key]) return byVariant[key];
   const w = sprW * FRAME.count;
   const { c, g } = makeBuffer(w, sprH);
   const img = g.createImageData(w, sprH);
   const d = img.data;
   sprSpecs.forEach((spec, i) => {
-    const cells = sprFrame(look, spec, variant || null);
+    const cells = sprFrame(look, spec, v);
     for (let y = 0; y < sprH; y++) {
       for (let x = 0; x < sprW; x++) {
         const name = cells[y * sprW + x];
