@@ -227,6 +227,8 @@ function uiOverlayHeight() {
 function uiMeasureSheet() {
   const f = uiEl('fiche');
   uiSheet = f && !f.hidden && uiPhoneQuery && uiPhoneQuery.matches ? Math.ceil(f.getBoundingClientRect().height) : 0;
+  const z = uiEl('zone');
+  if (z) z.style.setProperty('--sh', uiSheet + 'px');      // #pan rides above the sheet
 }
 
 function uiBindDemo() {

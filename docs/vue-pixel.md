@@ -933,7 +933,7 @@ Mesuré avec `bun run demo` en mode gros (`BUREAU_DEMO=gros` : 5 projets, 40 age
 | CPU par image, vue d'étage (3 étages à l'écran ; la maquette B mesure 1,2 ms) | 3 ms au plus |
 | CPU par image, vue avancée | 4 ms au plus |
 | Mémoire allouée par image | 100 Ko au plus (objets créés par image : aucun dans les boucles de dessin) |
-| `applyOffice` pour 40 agents | 2 ms au plus (le premier appel, 3 à 7 ms, est une exception acceptée ; 0,3 ms ensuite) |
+| `applyOffice` pour 40 agents | 2 ms au plus (le premier appel est une exception acceptée, 20 ms au plus : mesuré 12 à 16 ms, c'est la création des étages, des plans et des premières planches de sprites ; il n'a lieu qu'une fois au chargement, avant la première image ; 0,3 ms ensuite) |
 | `layoutFloor` pour l'étage Boutique | 2 ms au plus |
 | `findPath` sur un plateau de 96 x 44 cellules (4 224 cases, la largeur maximale) | 0,4 ms au plus |
 | Décor statique d'un étage (plateau et dalle, 496 x 368 px au moins), première image | 30 ms au plus |

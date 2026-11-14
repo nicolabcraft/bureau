@@ -67,7 +67,7 @@ svg{display:block;flex:none}
 .mini button[aria-pressed=true]{background:var(--ligne);color:var(--texte)}
 .mini output{min-width:34px;text-align:center;color:var(--doux);font-variant-numeric:tabular-nums}
 #zoom{left:10px;bottom:calc(10px + var(--dh,0px) + var(--jh,0px))}
-#pan{left:calc((100% - var(--jr,0px)) / 2);bottom:calc(10px + var(--dh,0px) + var(--jh,0px));transform:translateX(-50%)}
+#pan{left:calc((100% - var(--jr,0px)) / 2);bottom:calc(10px + var(--dh,0px) + var(--jh,0px) + var(--sh,0px));transform:translateX(-50%)}
 #dialog{position:absolute;left:0;right:0;bottom:0;z-index:6}
 #journal{position:absolute;right:0;top:0;bottom:0;z-index:5;width:min(340px,100%);overflow:auto;background:var(--panneau);border-left:1px solid var(--ligne)}
 .vide-scene{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:5;width:min(380px,calc(100% - 32px));padding:20px 22px;border:1px solid var(--ligne2);border-radius:6px;background:rgba(34,43,58,.94);text-align:center;pointer-events:none}
@@ -173,8 +173,15 @@ dd small{display:block;color:var(--doux);font-size:12.5px}
   #toast[data-v=false]{transform:translate(-50%,8px)}
   .pied{left:8px;right:8px;top:56px;width:auto}
   #journal{top:auto;left:0;right:0;bottom:0;width:auto;height:42%;border-left:0;border-top:1px solid var(--ligne)}
-  #fiche{left:0;right:0;top:auto;bottom:calc(var(--dh,0px) + var(--jh,0px));width:auto;max-width:none;max-height:46dvh;border-width:1px 0 0 0;border-radius:12px 12px 0 0;padding:12px 14px 16px}
-  dl{grid-template-columns:84px 1fr}
+  #fiche{left:0;right:0;top:auto;bottom:calc(var(--dh,0px) + var(--jh,0px));width:auto;max-width:none;max-height:46dvh;border-width:1px 0 0 0;border-radius:12px 12px 0 0;padding:12px 14px 0;overscroll-behavior:contain;scroll-padding-bottom:104px}
+  /* the details scroll, the row of buttons stays stuck at the foot of the sheet */
+  #fiche .boutons{position:sticky;bottom:0;z-index:1;margin:12px -14px 0;padding:10px 14px 12px;background:var(--panneau);border-top:1px solid var(--ligne)}
+  #fiche .boutons .btn{flex:1 1 auto}
+  .tete{margin-bottom:8px}
+  .question{margin-bottom:8px}
+  .rapport{max-height:96px}
+  #pPlan .plan-pied{position:sticky;bottom:0;margin:12px -14px 0;padding:10px 14px 12px;background:var(--panneau);border-top:1px solid var(--ligne)}
+  dl{grid-template-columns:84px 1fr;gap:6px 12px}
 }
 @media (prefers-reduced-motion:reduce){
   #toast{transition:none}
