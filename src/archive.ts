@@ -8,9 +8,9 @@
  *  - the settings file `reglages.json` and the journal `archivage.jsonl` in the
  *    plugin's data directory.
  *
- * Boite does not open `threads.archive` to plugins yet (its plugin permissions
- * are threads.read, threads.write, todos and ui.reveal), so `coreArchiver`
- * stays switched off by `CORE_ARCHIVE_OPEN`. Nothing here deletes a thread.
+ * Since Boite 2.0.0-nightly.20261111.1, a plugin granted `threads.write` may call
+ * `threads.archive` (archive only, never on a pinned thread). An older core refuses
+ * the call: the refusal is journaled. Nothing here deletes a thread.
  */
 import { appendFileSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -28,10 +28,10 @@ export const JOURNAL_MAX_BYTES = 512 * 1024;
 export const MAX_DELAY_HOURS = 24 * 365;
 
 /**
- * Flip to true once Boite lets a plugin call `threads.archive` (a permission in the manifest, and
- * the method in the core's plugin table). Until then no thread is archived by Bureau.
+ * Boite opens `threads.archive` to plugins under `threads.write`. Set to false to stop every
+ * real archiving call (rules, journal and dry runs keep working).
  */
-export const CORE_ARCHIVE_OPEN = false;
+export const CORE_ARCHIVE_OPEN = true;
 
 export interface ArchiveSettings {
   /** Archive on its own, in the service. */

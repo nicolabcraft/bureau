@@ -42,7 +42,7 @@ export interface ProjectRow {
 export interface CoreMethods {
   'threads.list': { params: { includeArchived?: boolean }; result: ThreadRow[] };
   'projects.list': { params: Record<string, never>; result: ProjectRow[] };
-  /** Not open to plugins today (see archive.ts, CORE_ARCHIVE_OPEN). */
+  /** Open to plugins granted threads.write; archive only (see archive.ts, CORE_ARCHIVE_OPEN). */
   'threads.archive': { params: { threadId: string; archived?: boolean; onlyIfIdle?: boolean }; result: unknown };
   'turns.start': { params: { threadId: string; prompt: string }; result: unknown };
   'turns.stop': { params: { threadId: string }; result: { stopped: boolean } };

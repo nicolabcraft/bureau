@@ -18,7 +18,7 @@ Bureau est un plugin de [Boite](https://github.com/mtsu-dev/boite). Il fait deux
 - Le filtre « Qui m'attend » réunit les agents qui attendent une réponse de votre part, tous fournisseurs confondus.
 - Un plan de mission visible, avec un bouton « Valider le plan » : rien ne part sans votre accord.
 - Des boutons pour ouvrir la bonne conversation ou arrêter le tour d'un agent.
-- Un archivage automatique des conversations inutilisées, avec journal et passage à blanc (voir la limite actuelle dans le [wiki](https://github.com/nicolabcraft/bureau/wiki/Archivage-automatique)).
+- Un archivage automatique des conversations inutilisées, avec journal et passage à blanc (Boite 2.0.0-nightly.20261111.1 ou plus récent, voir le [wiki](https://github.com/nicolabcraft/bureau/wiki/Archivage-automatique)).
 - Respect de « réduire les animations » du système.
 
 ## Installation
